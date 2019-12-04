@@ -498,9 +498,11 @@ fn get_eth_ip(con_uuid: &String) -> Result<String> {
         .output()
         .expect("failed to execute get IP4.ADDRESS");
 
-    let o = from_utf8(&output.stdout).unwrap().to_string().trim().split("/").collect::<Vec<&str>>()[0];
+    let o = from_utf8(&output.stdout).unwrap().to_string();
+    
+    let trimmed_o = o.trim().split("/").collect::<Vec<&str>>();
 
-    Ok(o.to_string())
+    Ok(trimmed_o[0].to_string())
 }
 
 fn get_eth_gw(con_uuid: &String) -> Result<String> {
