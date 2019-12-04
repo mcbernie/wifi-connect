@@ -442,7 +442,7 @@ impl NetworkCommandHandler {
 
     fn connect_static(&mut self, ip: &str, sn: &str, gw: &str, dns: &str) -> Result<bool> {
         use std::process::Command;
-
+        info!("connect_static: {} {} {} {}", ip, sn, gw, dns);
         match &self.ethernet_device {
             Some(device) => {
                 let interface = device.interface().to_string();
@@ -463,7 +463,7 @@ impl NetworkCommandHandler {
                     Err(_) => {},
                 };
 
-                let _output = Command::new("nmcli")
+                let output = Command::new("nmcli")
                     .arg("c")
                     .arg("add") 
                     .arg(format!("static-{}", &interface))
@@ -477,8 +477,10 @@ impl NetworkCommandHandler {
                     .arg(gw)
                     .output()
                     .expect("failed to crate new connection");
+                info!("add:{}", from_utf8(&output.stdout).unwrap());
                 
-                let _output = Command::new("nmcli")
+
+                let output = Command::new("nmcli")
                     .arg("c")
                     .arg("mod") 
                     .arg(format!("static-{}", &interface))
@@ -486,8 +488,9 @@ impl NetworkCommandHandler {
                     .arg(dns)
                     .output()
                     .expect(&format!("failed to set dns for static-{}", &interface));
+                info!("mod:{}", from_utf8(&output.stdout).unwrap());
                     
-                let _output = Command::new("nmcli")
+                let output = Command::new("nmcli")
                     .arg("c")
                     .arg("up") 
                     .arg(format!("static-{}", &interface))
@@ -495,6 +498,7 @@ impl NetworkCommandHandler {
                     .arg(&interface)
                     .output()
                     .expect(&format!("failed to go online with static-{}", &interface));
+                info!("up:{}", from_utf8(&output.stdout).unwrap());
                 
 
                 match wait_for_connectivity(&self.manager, 20) {

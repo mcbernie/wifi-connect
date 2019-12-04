@@ -237,7 +237,7 @@ fn connect(req: &mut Request) -> IronResult<Response> {
             let gw = get_param!(params, "eth_gateway", String);
             let dns = get_param!(params, "eth_dns", String);
 
-            debug!("Incoming `connect` to static ip `{}` request", ip);
+            info!("Incoming `connect` to static ip `{}` request", ip);
 
             let command = NetworkCommand::EthConnect {
                 ip: ip,
@@ -256,7 +256,7 @@ fn connect(req: &mut Request) -> IronResult<Response> {
         "ethernet-dhcp" => {
             let command = NetworkCommand::EthDhcp;
 
-            debug!("Incoming `connect` to DHCP request");
+            info!("Incoming `connect` to DHCP request");
 
             let request_state = get_request_state!(req);
             if let Err(e) = request_state.network_tx.send(command) {
@@ -271,7 +271,7 @@ fn connect(req: &mut Request) -> IronResult<Response> {
             let identity = get_param!(params, "identity", String);
             let passphrase = get_param!(params, "passphrase", String);
 
-            debug!("Incoming `connect` to access point `{}` request", ssid);
+            info!("Incoming `connect` to access point `{}` request", ssid);
 
             let command = NetworkCommand::Connect {
                 ssid: ssid,
