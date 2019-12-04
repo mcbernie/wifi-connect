@@ -247,10 +247,11 @@ impl NetworkCommandHandler {
                     let interface = d.interface();
                     match get_eth_uuid(&interface.to_string()) {
                         Ok(uuid) => {
+                            info!("uuid for {} is {}", interface, uuid);
                             if uuid != "" {
                                 match is_eth_dhcp(&uuid) {
                                     Ok(is_dhcp) => {
-
+                                        
                                         let default_address = Ipv4Addr::from_str("0.0.0.0").unwrap();
 
                                         let ip4_address = {
@@ -258,6 +259,7 @@ impl NetworkCommandHandler {
                                                 Ok(ip) => ip,
                                                 Err(_e) => "".to_string(),
                                             };
+                                            info!("ip for {} is {}", interface, ip);
                                             match Ipv4Addr::from_str(&ip) {
                                                 Ok(ip) => ip,
                                                 Err(_e) => {
@@ -271,6 +273,7 @@ impl NetworkCommandHandler {
                                                 Ok(ip) => ip,
                                                 Err(_e) => "".to_string(),
                                             };
+                                            info!("gw for {} is {}", interface, ip);
                                             match Ipv4Addr::from_str(&ip) {
                                                 Ok(ip) => ip,
                                                 Err(_e) => {
@@ -284,6 +287,7 @@ impl NetworkCommandHandler {
                                                 Ok(ip) => ip,
                                                 Err(_e) => "".to_string(),
                                             };
+                                            info!("dns for {} is {}", interface, ip);
                                             match Ipv4Addr::from_str(&ip) {
                                                 Ok(ip) => ip,
                                                 Err(_e) => {
@@ -299,10 +303,12 @@ impl NetworkCommandHandler {
 
 
                                         if is_dhcp == true {
+                                            info!("DHCP is enabled");
                                             EthernetTyp::Dhcp(
                                                 ip4_address, subnet, gw_address, dns_address
                                             )
                                         } else {
+                                            info!("DHCP is disabled");
                                             EthernetTyp::Static(
                                                 ip4_address, subnet, gw_address, dns_address
                                             )
@@ -439,6 +445,7 @@ pub fn init_networking(config: &Config) -> Result<()> {
 }
 
 fn get_eth_uuid(interface: &String) -> Result<String> {
+    info!("get eth uuid for {}", interface);
     use std::process::Command;
     let output = Command::new("nmcli")
         .arg("-g")
@@ -453,6 +460,8 @@ fn get_eth_uuid(interface: &String) -> Result<String> {
 }
 
 fn is_eth_dhcp(con_uuid: &String) -> Result<bool> {
+
+    info!("get eth dhcp settings for {}", con_uuid);
     use std::process::Command;
     let output = Command::new("nmcli")
         .arg("-g")
@@ -463,15 +472,21 @@ fn is_eth_dhcp(con_uuid: &String) -> Result<bool> {
         .output()
         .expect("failed to execute get ipv4.method");
 
-    match from_utf8(&output.stdout).unwrap() {
+    let outputstr = from_utf8(&output.stdout).unwrap();
+    info!("ipv4.method for {} is {}", con_uuid, outputstr);
+    match outputstr {
         "auto" => {
             Ok(true)
         }, 
-        _ => Ok(false)
+        _ => {
+            Ok(false)
+        }
     }
 }
 
 fn get_eth_ip(con_uuid: &String) -> Result<String> {
+    info!("get eth IP for {}", con_uuid);
+
     use std::process::Command;
     let output = Command::new("nmcli")
         .arg("-g")
@@ -486,6 +501,8 @@ fn get_eth_ip(con_uuid: &String) -> Result<String> {
 }
 
 fn get_eth_gw(con_uuid: &String) -> Result<String> {
+    info!("get eth GW for {}", con_uuid);
+
     use std::process::Command;
     let output = Command::new("nmcli")
         .arg("-g")
@@ -500,6 +517,8 @@ fn get_eth_gw(con_uuid: &String) -> Result<String> {
 }
 
 fn get_eth_dns(con_uuid: &String) -> Result<String> {
+    info!("get eth DNS for {}", con_uuid);
+
     use std::process::Command;
     let output = Command::new("nmcli")
         .arg("-g")

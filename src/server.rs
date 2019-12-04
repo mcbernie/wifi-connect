@@ -144,7 +144,7 @@ pub fn start_server(
     router.get("/", Static::new(ui_directory), "index");
     router.get("/networks", networks, "networks");
     router.post("/connect", connect, "connect");
-    router.post("/begin", begin_config_mode, "begin");
+    router.post("/start", start, "start");
 
     let mut assets = Mount::new();
     assets.mount("/", router);
@@ -195,7 +195,7 @@ fn networks(req: &mut Request) -> IronResult<Response> {
     Ok(Response::with((status::Ok, network_json)))
 }
 
-fn begin_config_mode(req: &mut Request) -> IronResult<Response> {
+fn start(req: &mut Request) -> IronResult<Response> {
     use std::fs::File;
     use std::io::prelude::*;
     use std::process::Command;
@@ -203,11 +203,12 @@ fn begin_config_mode(req: &mut Request) -> IronResult<Response> {
     // create tmp file,
     // reboot
     //let request_state = get_request_state!(req);
-    
+    info!("start config mode called..");
     
 
     match File::create("/tmp/CONFIGMODE") {
         Ok(mut file) => {
+            info!("create configmode file and reboot...");
             file.write_all(b"ENABLE CONFIG MODE");
             let _output = Command::new("reboot").arg("now").output();
             Ok(Response::with(status::Ok))

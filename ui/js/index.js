@@ -4,7 +4,7 @@ $(function(){
 	function showHideEnterpriseSettings() {
 		var field_to_show = $(this).find(':selected').attr('value');
 		$('#ethernet').hide();
-		$('#ethernet-dhcpp').hide();
+		$('#ethernet-dhcp').hide();
 		$('#wlan').hide();
 
 		$('#' + field_to_show).show();
@@ -34,14 +34,34 @@ $(function(){
 		
 			config = JSON.parse(data);
 
-			$.each(config.networks, function(i, val){
+			/*$.each(config, function(i, val){
 				$('#network-select').append(
 					$('<option>')
 						.text(val.name)
 						.attr('value', val.id)
 						.attr('data-config', val.config)
 				);
-			});
+			});*/
+
+			$('#network-select').append(
+				$('<option>')
+						.text("WLAN")
+						.attr('value', "wlan")
+			);
+
+			if (config.ethernet) {
+				$('#network-select').append(
+					$('<option>')
+							.text(" Kabelgebundenes Netzwerk - DHCP")
+							.attr('value', "ethernet-dhcp")
+				);
+
+				$('#network-select').append(
+					$('<option>')
+							.text(" Kabelgebundenes Netzwerk - Manuell")
+							.attr('value', "ethernet")
+				);
+			}
 
 			jQuery.proxy(showSettingsFields, $('#network-select'))();
 
