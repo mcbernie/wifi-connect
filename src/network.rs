@@ -457,7 +457,7 @@ fn get_eth_uuid(interface: &String) -> Result<String> {
         .expect("failed to execute get con-uuid");
 
     
-    Ok(from_utf8(&output.stdout).unwrap().to_string().trim())
+    Ok(from_utf8(&output.stdout).unwrap().to_string().trim().to_string())
 }
 
 fn is_eth_dhcp(con_uuid: &String) -> Result<bool> {
@@ -473,7 +473,7 @@ fn is_eth_dhcp(con_uuid: &String) -> Result<bool> {
         .output()
         .expect("failed to execute get ipv4.method");
 
-    let outputstr = from_utf8(&output.stdout).unwrap().trim();
+    let outputstr = from_utf8(&output.stdout).unwrap().trim().to_string();
     info!("ipv4.method for {} is {}", con_uuid, outputstr);
     match outputstr {
         "auto" => {
@@ -498,7 +498,7 @@ fn get_eth_ip(con_uuid: &String) -> Result<String> {
         .output()
         .expect("failed to execute get IP4.ADDRESS");
 
-        Ok(from_utf8(&output.stdout).unwrap().to_string().trim())
+        Ok(from_utf8(&output.stdout).unwrap().to_string().trim().to_string())
 }
 
 fn get_eth_gw(con_uuid: &String) -> Result<String> {
@@ -514,7 +514,7 @@ fn get_eth_gw(con_uuid: &String) -> Result<String> {
         .output()
         .expect("failed to execute get IP4.GATEWAY");
 
-    Ok(from_utf8(&output.stdout).unwrap().to_string().trim())
+    Ok(from_utf8(&output.stdout).unwrap().to_string().trim().to_string())
 }
 
 fn get_eth_dns(con_uuid: &String) -> Result<String> {
@@ -530,7 +530,7 @@ fn get_eth_dns(con_uuid: &String) -> Result<String> {
         .output()
         .expect("failed to execute get IP4.DNS");
 
-    Ok(from_utf8(&output.stdout).unwrap().to_string().trim())
+    Ok(from_utf8(&output.stdout).unwrap().to_string().trim().to_string())
 }
 
 pub fn find_eth_device(manager: &NetworkManager, interface: &Option<String>) -> Result<Device> {
