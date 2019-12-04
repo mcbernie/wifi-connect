@@ -368,7 +368,7 @@ impl NetworkCommandHandler {
     fn connect_dhcp(&mut self) -> Result<bool> {
         use std::process::Command;
 
-        match self.ethernet_device {
+        match &self.ethernet_device {
             Some(device) => {
                 let interface = device.interface().to_string();
                 match get_eth_uuid(&interface) {
@@ -391,9 +391,9 @@ impl NetworkCommandHandler {
                 let _output = Command::new("nmcli")
                     .arg("c")
                     .arg("add") 
-                    .arg(format!("dhcp-{}", interface))
+                    .arg(format!("dhcp-{}", &interface))
                     .arg("ifname")
-                    .arg(interface)
+                    .arg(&interface)
                     .arg("type")
                     .arg("ethernet")
                     .output()
@@ -402,20 +402,20 @@ impl NetworkCommandHandler {
                 let _output = Command::new("nmcli")
                     .arg("c")
                     .arg("mod") 
-                    .arg(format!("dhcp-{}", interface))
+                    .arg(format!("dhcp-{}", &interface))
                     .arg("ipv4.method")
                     .arg("auto")
                     .output()
-                    .expect(&format!("failed to set dns for dhcp-{}", interface));
+                    .expect(&format!("failed to set dns for dhcp-{}", &interface));
                     
                 let _output = Command::new("nmcli")
                     .arg("c")
                     .arg("up") 
-                    .arg(format!("dhcp-{}", interface))
+                    .arg(format!("dhcp-{}", &interface))
                     .arg("iface")
-                    .arg(interface)
+                    .arg(&interface)
                     .output()
-                    .expect(&format!("failed to go online with dhcp-{}", interface));
+                    .expect(&format!("failed to go online with dhcp-{}", &interface));
                 
 
                 match wait_for_connectivity(&self.manager, 20) {
@@ -443,7 +443,7 @@ impl NetworkCommandHandler {
     fn connect_static(&mut self, ip: &str, sn: &str, gw: &str, dns: &str) -> Result<bool> {
         use std::process::Command;
 
-        match self.ethernet_device {
+        match &self.ethernet_device {
             Some(device) => {
                 let interface = device.interface().to_string();
                 match get_eth_uuid(&interface) {
@@ -466,9 +466,9 @@ impl NetworkCommandHandler {
                 let _output = Command::new("nmcli")
                     .arg("c")
                     .arg("add") 
-                    .arg(format!("static-{}", interface))
+                    .arg(format!("static-{}", &interface))
                     .arg("ifname")
-                    .arg(interface)
+                    .arg(&interface)
                     .arg("type")
                     .arg("ethernet")
                     .arg("ip4")
@@ -481,20 +481,20 @@ impl NetworkCommandHandler {
                 let _output = Command::new("nmcli")
                     .arg("c")
                     .arg("mod") 
-                    .arg(format!("static-{}", interface))
+                    .arg(format!("static-{}", &interface))
                     .arg("ipv4.dns")
                     .arg(dns)
                     .output()
-                    .expect(&format!("failed to set dns for static-{}", interface));
+                    .expect(&format!("failed to set dns for static-{}", &interface));
                     
                 let _output = Command::new("nmcli")
                     .arg("c")
                     .arg("up") 
-                    .arg(format!("static-{}", interface))
+                    .arg(format!("static-{}", &interface))
                     .arg("iface")
-                    .arg(interface)
+                    .arg(&interface)
                     .output()
-                    .expect(&format!("failed to go online with static-{}", interface));
+                    .expect(&format!("failed to go online with static-{}", &interface));
                 
 
                 match wait_for_connectivity(&self.manager, 20) {

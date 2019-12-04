@@ -224,8 +224,13 @@ fn start(req: &mut Request) -> IronResult<Response> {
 
 fn connect(req: &mut Request) -> IronResult<Response> {
 
+    
+    
     let params = get_request_ref!(req, Params, "Getting request params failed");
-    match &get_param!(params, "network-select", String) {
+
+    let network_selection = &*get_param!(params, "network-select", String);
+    
+    match network_selection {
         "ethernet" => {
             let ip = get_param!(params, "eth_ipaddress", String);
             let sn = get_param!(params, "eth_subnet", String);
@@ -234,8 +239,6 @@ fn connect(req: &mut Request) -> IronResult<Response> {
 
             debug!("Incoming `connect` to static ip `{}` request", ip);
 
-            let request_state = get_request_state!(req);
-
             let command = NetworkCommand::EthConnect {
                 ip: ip,
                 sn: sn,
@@ -243,6 +246,7 @@ fn connect(req: &mut Request) -> IronResult<Response> {
                 dns: dns,
             };
 
+            let request_state = get_request_state!(req);
             if let Err(e) = request_state.network_tx.send(command) {
                 exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
             } else {
@@ -253,6 +257,8 @@ fn connect(req: &mut Request) -> IronResult<Response> {
             let command = NetworkCommand::EthDhcp;
 
             debug!("Incoming `connect` to DHCP request");
+
+            let request_state = get_request_state!(req);
             if let Err(e) = request_state.network_tx.send(command) {
                 exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
             } else {
@@ -267,19 +273,22 @@ fn connect(req: &mut Request) -> IronResult<Response> {
 
             debug!("Incoming `connect` to access point `{}` request", ssid);
 
-            let request_state = get_request_state!(req);
-
             let command = NetworkCommand::Connect {
                 ssid: ssid,
                 identity: identity,
                 passphrase: passphrase,
             };
 
+            let request_state = get_request_state!(req);
             if let Err(e) = request_state.network_tx.send(command) {
                 exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
             } else {
                 Ok(Response::with(status::Ok))
             }
+        },
+        _ => {
+            //exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
+            Ok(Response::with(status::Ok))
         }
     }
 
