@@ -12,7 +12,12 @@ $(function(){
 
 	$('#ethernet').hide();
 	$('#ethernet-dhcpp').hide();
-	$('#wlan').hide();
+	$('#wlan').show();
+
+	$('#eth_ipaddress').ipaddress();
+	$('#eth_subnet').ipaddress();
+	$('#eth_gateway').ipaddress();
+	$('#eth_dns').ipaddress();
 
 	function showHideEnterpriseSettings() {
 		var security = $(this).find(':selected').attr('data-security');
@@ -62,7 +67,6 @@ $(function(){
 
 			jQuery.proxy(showSettingsFields, $('#network-select'))();
 
-			$('#wlan').show();
 			if(config.ssids.length === 0){
 				$('.before-submit').hide();
 				$('#no-networks-message').removeClass('hidden');
