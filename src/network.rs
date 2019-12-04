@@ -14,6 +14,8 @@ use exit::{exit, trap_exit_signals, ExitResult};
 use config::Config;
 use dnsmasq::start_dnsmasq;
 use server::start_server;
+use std::str::{FromStr,from_utf8};
+
 
 pub enum NetworkCommand {
     Activate,
@@ -32,13 +34,27 @@ pub struct Network {
     security: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub enum EthernetTyp {
+    None,
+    Dhcp(Ipv4Addr,Ipv4Addr,Ipv4Addr,Ipv4Addr),
+    Static(Ipv4Addr,Ipv4Addr,Ipv4Addr,Ipv4Addr),
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct NetworkConfiguration {
+    ssids: Vec<Network>,
+    ethernet: EthernetTyp,
+}
+
 pub enum NetworkCommandResponse {
-    Networks(Vec<Network>),
+    Network(NetworkConfiguration),
 }
 
 struct NetworkCommandHandler {
     manager: NetworkManager,
     device: Device,
+    ethernet_device: Option<Device>,
     access_points: Vec<AccessPoint>,
     portal_connection: Option<Connection>,
     config: Config,
@@ -60,6 +76,14 @@ impl NetworkCommandHandler {
         let device = find_device(&manager, &config.interface)?;
 
         let access_points = get_access_points(&device)?;
+        
+        let ethernet_device = {
+            if let Ok(device) = find_eth_device(&manager, &config.eth_inferface) {
+                Some(device)
+            } else {
+                None
+            }
+        };
 
         let portal_connection = Some(create_portal(&device, config)?);
 
@@ -77,6 +101,7 @@ impl NetworkCommandHandler {
         Ok(NetworkCommandHandler {
             manager,
             device,
+            ethernet_device,
             access_points,
             portal_connection,
             config,
@@ -96,7 +121,17 @@ impl NetworkCommandHandler {
         let gateway = config.gateway;
         let listening_port = config.listening_port;
         let exit_tx_server = exit_tx.clone();
-        let ui_directory = config.ui_directory.clone();
+
+        // determine if in "CONFIGMODE.tmp" exists in TMP
+        let ui_directory = match std::path::Path::new("/tmp/CONFIGMODE").exists() {
+            true => {
+                config.ui_directory.clone()
+            },
+            false => {
+                config.pre_ui_directory.clone()
+            }
+        };
+        
 
         thread::spawn(move || {
             start_server(
@@ -204,10 +239,101 @@ impl NetworkCommandHandler {
     fn activate(&mut self) -> ExitResult {
         self.activated = true;
 
-        let networks = get_networks(&self.access_points);
+        let ssids = get_networks(&self.access_points);
+        
+        let ethernet = {
+            match &self.ethernet_device {
+                Some(d) => {
+                    let interface = d.interface();
+                    match get_eth_uuid(&interface.to_string()) {
+                        Ok(uuid) => {
+                            if uuid != "" {
+                                match is_eth_dhcp(&uuid) {
+                                    Ok(is_dhcp) => {
 
+                                        let default_address = Ipv4Addr::from_str("0.0.0.0").unwrap();
+
+                                        let ip4_address = {
+                                            let ip = match get_eth_ip(&uuid) {
+                                                Ok(ip) => ip,
+                                                Err(_e) => "".to_string(),
+                                            };
+                                            match Ipv4Addr::from_str(&ip) {
+                                                Ok(ip) => ip,
+                                                Err(_e) => {
+                                                    default_address
+                                                }
+                                            }
+                                        };
+
+                                        let gw_address = {
+                                            let ip = match get_eth_gw(&uuid) {
+                                                Ok(ip) => ip,
+                                                Err(_e) => "".to_string(),
+                                            };
+                                            match Ipv4Addr::from_str(&ip) {
+                                                Ok(ip) => ip,
+                                                Err(_e) => {
+                                                    default_address
+                                                }
+                                            }
+                                        };
+
+                                        let dns_address = {
+                                            let ip = match get_eth_dns(&uuid) {
+                                                Ok(ip) => ip,
+                                                Err(_e) => "".to_string(),
+                                            };
+                                            match Ipv4Addr::from_str(&ip) {
+                                                Ok(ip) => ip,
+                                                Err(_e) => {
+                                                    default_address
+                                                }
+                                            }
+                                        };
+
+
+
+                                        let subnet = Ipv4Addr::from_str("255.255.255.0").unwrap();
+
+
+
+                                        if is_dhcp == true {
+                                            EthernetTyp::Dhcp(
+                                                ip4_address, subnet, gw_address, dns_address
+                                            )
+                                        } else {
+                                            EthernetTyp::Static(
+                                                ip4_address, subnet, gw_address, dns_address
+                                            )
+                                        }
+                                    },
+                                    Err(_e) => {
+                                        EthernetTyp::None
+                                    }
+                                }
+                            } else {
+                                EthernetTyp::None
+                            }
+                        },
+                        Err(_e) => {
+                            EthernetTyp::None
+                        }
+                    }
+                },
+                None => {
+                    EthernetTyp::None
+                }
+            }
+        };
+
+        let nc = NetworkConfiguration{
+            ssids: ssids,
+            ethernet: ethernet,
+        };
+        // determine if ethernet is aviable
         self.server_tx
-            .send(NetworkCommandResponse::Networks(networks))
+            .send(NetworkCommandResponse::Network(nc))
             .chain_err(|| ErrorKind::SendAccessPointSSIDs)
     }
 
@@ -312,6 +438,110 @@ pub fn init_networking(config: &Config) -> Result<()> {
     delete_exising_wifi_connect_ap_profile(&config.ssid).chain_err(|| ErrorKind::DeleteAccessPoint)
 }
 
+fn get_eth_uuid(interface: &String) -> Result<String> {
+    use std::process::Command;
+    let output = Command::new("nmcli")
+        .arg("-g")
+        .arg("general.con-uuid")
+        .arg("device") 
+        .arg("show")
+        .arg(interface)
+        .output()
+        .expect("failed to execute get con-uuid");
+
+    Ok(from_utf8(&output.stdout).unwrap().to_string())
+}
+
+fn is_eth_dhcp(con_uuid: &String) -> Result<bool> {
+    use std::process::Command;
+    let output = Command::new("nmcli")
+        .arg("-g")
+        .arg("ipv4.method")
+        .arg("c") 
+        .arg("s")
+        .arg(con_uuid)
+        .output()
+        .expect("failed to execute get ipv4.method");
+
+    match from_utf8(&output.stdout).unwrap() {
+        "auto" => {
+            Ok(true)
+        }, 
+        _ => Ok(false)
+    }
+}
+
+fn get_eth_ip(con_uuid: &String) -> Result<String> {
+    use std::process::Command;
+    let output = Command::new("nmcli")
+        .arg("-g")
+        .arg("IP4.ADDRESS")
+        .arg("c") 
+        .arg("s")
+        .arg(con_uuid)
+        .output()
+        .expect("failed to execute get IP4.ADDRESS");
+
+        Ok(from_utf8(&output.stdout).unwrap().to_string())
+}
+
+fn get_eth_gw(con_uuid: &String) -> Result<String> {
+    use std::process::Command;
+    let output = Command::new("nmcli")
+        .arg("-g")
+        .arg("IP4.GATEWAY")
+        .arg("c") 
+        .arg("s")
+        .arg(con_uuid)
+        .output()
+        .expect("failed to execute get IP4.GATEWAY");
+
+    Ok(from_utf8(&output.stdout).unwrap().to_string())
+}
+
+fn get_eth_dns(con_uuid: &String) -> Result<String> {
+    use std::process::Command;
+    let output = Command::new("nmcli")
+        .arg("-g")
+        .arg("IP4.DNS")
+        .arg("c") 
+        .arg("s")
+        .arg(con_uuid)
+        .output()
+        .expect("failed to execute get IP4.DNS");
+
+    Ok(from_utf8(&output.stdout).unwrap().to_string())
+}
+
+pub fn find_eth_device(manager: &NetworkManager, interface: &Option<String>) -> Result<Device> {
+    if let Some(ref interface) = *interface {
+        let device = manager
+            .get_device_by_interface(interface)
+            .chain_err(|| ErrorKind::DeviceByInterface(interface.clone()))?;
+
+        info!("Targeted Ethernet device: {}", interface);
+
+        if *device.device_type() != DeviceType::Ethernet {
+            bail!(ErrorKind::NotAWiFiDevice(interface.clone()))
+        }
+
+        if device.get_state()? == DeviceState::Unavailable {
+            bail!(ErrorKind::UnmanagedDevice(interface.clone()))
+        }
+
+        Ok(device)
+    } else {
+        let devices = manager.get_devices()?;
+
+        if let Some(device) = find_ethernet_device(devices)? {
+            info!("Ethernet device: {}", device.interface());
+            Ok(device)
+        } else {
+            bail!(ErrorKind::NoEthDevice)
+        }
+    }
+} 
+
 pub fn find_device(manager: &NetworkManager, interface: &Option<String>) -> Result<Device> {
     if let Some(ref interface) = *interface {
         let device = manager
@@ -345,6 +575,18 @@ fn find_wifi_managed_device(devices: Vec<Device>) -> Result<Option<Device>> {
     for device in devices {
         if *device.device_type() == DeviceType::WiFi
             && device.get_state()? != DeviceState::Unmanaged
+        {
+            return Ok(Some(device));
+        }
+    }
+
+    Ok(None)
+}
+
+fn find_ethernet_device(devices: Vec<Device>) -> Result<Option<Device>> {
+    for device in devices {
+        if *device.device_type() == DeviceType::Ethernet
+            && device.get_state()? != DeviceState::Unavailable
         {
             return Ok(Some(device));
         }

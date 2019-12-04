@@ -144,6 +144,7 @@ pub fn start_server(
     router.get("/", Static::new(ui_directory), "index");
     router.get("/networks", networks, "networks");
     router.post("/connect", connect, "connect");
+    router.post("/begin", begin_config_mode, "begin");
 
     let mut assets = Mount::new();
     assets.mount("/", router);
@@ -179,19 +180,45 @@ fn networks(req: &mut Request) -> IronResult<Response> {
         return exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandActivate);
     }
 
-    let networks = match request_state.server_rx.recv() {
+    let network = match request_state.server_rx.recv() {
         Ok(result) => match result {
-            NetworkCommandResponse::Networks(networks) => networks,
+            NetworkCommandResponse::Network(network) => network,
         },
         Err(e) => return exit_with_error(&request_state, e, ErrorKind::RecvAccessPointSSIDs),
     };
 
-    let access_points_json = match serde_json::to_string(&networks) {
+    let network_json = match serde_json::to_string(&network) {
         Ok(json) => json,
         Err(e) => return exit_with_error(&request_state, e, ErrorKind::SerializeAccessPointSSIDs),
     };
 
-    Ok(Response::with((status::Ok, access_points_json)))
+    Ok(Response::with((status::Ok, network_json)))
+}
+
+fn begin_config_mode(req: &mut Request) -> IronResult<Response> {
+    use std::fs::File;
+    use std::io::prelude::*;
+    use std::process::Command;
+
+    // create tmp file,
+    // reboot
+    //let request_state = get_request_state!(req);
+    
+    
+
+    match File::create("/tmp/CONFIGMODE") {
+        Ok(mut file) => {
+            file.write_all(b"ENABLE CONFIG MODE");
+            let _output = Command::new("reboot").arg("now").output();
+            Ok(Response::with(status::Ok))
+        },
+        Err(e) => {
+            debug!("Error on set Config Mode");
+            Ok(Response::with(status::Ok))
+            //exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
+        }
+    }
+    
 }
 
 fn connect(req: &mut Request) -> IronResult<Response> {

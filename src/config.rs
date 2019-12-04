@@ -11,11 +11,13 @@ const DEFAULT_DHCP_RANGE: &str = "192.168.42.2,192.168.42.254";
 const DEFAULT_SSID: &str = "WiFi Connect";
 const DEFAULT_ACTIVITY_TIMEOUT: &str = "0";
 const DEFAULT_UI_DIRECTORY: &str = "ui";
+const DEFAULT_PRE_UI_DIRECTORY: &str = "ui-configmode";
 const DEFAULT_LISTENING_PORT: &str = "80";
 
 #[derive(Clone)]
 pub struct Config {
     pub interface: Option<String>,
+    pub eth_inferface: Option<String>,
     pub ssid: String,
     pub passphrase: Option<String>,
     pub gateway: Ipv4Addr,
@@ -23,6 +25,7 @@ pub struct Config {
     pub listening_port: u16,
     pub activity_timeout: u64,
     pub ui_directory: PathBuf,
+    pub pre_ui_directory: PathBuf,
 }
 
 pub fn get_config() -> Config {
@@ -36,6 +39,14 @@ pub fn get_config() -> Config {
                 .long("portal-interface")
                 .value_name("interface")
                 .help("Wireless network interface to be used by WiFi Connect")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("ethernet-interface")
+                .short("e")
+                .long("ethernet-interface")
+                .value_name("eth_inferface")
+                .help("network interface to be used for Ethernet connection")
                 .takes_value(true),
         )
         .arg(
@@ -109,10 +120,26 @@ pub fn get_config() -> Config {
                 ))
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("pre-ui-directory")
+                .short("t")
+                .long("pre-ui-directory")
+                .value_name("pre_ui_directory")
+                .help(&format!(
+                    "Web UI directory for disabled config mode location (default: {})",
+                    DEFAULT_PRE_UI_DIRECTORY
+                ))
+                .takes_value(true),
+        )
         .get_matches();
 
     let interface: Option<String> = matches.value_of("portal-interface").map_or_else(
         || env::var("PORTAL_INTERFACE").ok(),
+        |v| Some(v.to_string()),
+    );
+
+    let eth_inferface: Option<String> = matches.value_of("ethernet-interface").map_or_else(
+        || env::var("PORTAL_ETH_INTERFACE").ok(),
         |v| Some(v.to_string()),
     );
 
@@ -155,8 +182,11 @@ pub fn get_config() -> Config {
 
     let ui_directory = get_ui_directory(matches.value_of("ui-directory"));
 
+    let pre_ui_directory = get_pre_ui_directory(matches.value_of("pre-ui-directory"));
+
     Config {
         interface: interface,
+        eth_inferface: eth_inferface,
         ssid: ssid,
         passphrase: passphrase,
         gateway: gateway,
@@ -164,6 +194,7 @@ pub fn get_config() -> Config {
         listening_port: listening_port,
         activity_timeout: activity_timeout,
         ui_directory: ui_directory,
+        pre_ui_directory: pre_ui_directory,
     }
 }
 
@@ -181,6 +212,22 @@ fn get_ui_directory(cmd_ui_directory: Option<&str>) -> PathBuf {
     }
 
     PathBuf::from(DEFAULT_UI_DIRECTORY)
+}
+
+fn get_pre_ui_directory(cmd_ui_directory: Option<&str>) -> PathBuf {
+    if let Some(ui_directory) = cmd_ui_directory {
+        return PathBuf::from(ui_directory);
+    }
+
+    if let Ok(ui_directory) = env::var("PRE_UI_DIRECTORY") {
+        return PathBuf::from(ui_directory);
+    }
+
+    if let Some(install_ui_directory) = get_install_pre_ui_directory() {
+        return install_ui_directory;
+    }
+
+    PathBuf::from(DEFAULT_PRE_UI_DIRECTORY)
 }
 
 /// Checks whether `WiFi Connect` is running from install path and whether the
@@ -205,6 +252,38 @@ fn get_install_ui_directory() -> Option<PathBuf> {
             path.push("share");
             path.push(env!("CARGO_PKG_NAME"));
             path.push("ui");
+
+            if path.is_dir() {
+                return Some(path);
+            }
+        }
+    }
+
+    None
+}
+
+// Checks whether `WiFi Connect` is running from install path and whether the
+/// UI directory is present in a corresponding location
+/// e.g. /usr/local/sbin/wifi-connect -> /usr/local/share/wifi-connect/ui
+fn get_install_pre_ui_directory() -> Option<PathBuf> {
+    if let Ok(exe_path) = env::current_exe() {
+        if let Ok(mut path) = exe_path.canonicalize() {
+            path.pop();
+
+            match path.file_name() {
+                Some(file_name) => {
+                    if file_name != OsStr::new("sbin") {
+                        // not executing from `sbin` folder
+                        return None;
+                    }
+                },
+                None => return None,
+            }
+
+            path.pop();
+            path.push("share");
+            path.push(env!("CARGO_PKG_NAME"));
+            path.push("ui-configmode");
 
             if path.is_dir() {
                 return Some(path);

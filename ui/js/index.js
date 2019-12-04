@@ -2,6 +2,22 @@ $(function(){
 	var networks = undefined;
 
 	function showHideEnterpriseSettings() {
+		var field_to_show = $(this).find(':selected').attr('value');
+		$('#ethernet').hide();
+		$('#ethernet-dhcpp').hide();
+		$('#wlan').hide();
+
+		$('#' + field_to_show).show();
+
+		
+
+	}
+
+	$('#ethernet').hide();
+	$('#ethernet-dhcpp').hide();
+	$('#wlan').hide();
+
+	function showSettingsFields() {
 		var security = $(this).find(':selected').attr('data-security');
 		if(security === 'enterprise') {
 			$('#identity-group').show();
@@ -12,23 +28,39 @@ $(function(){
 
 	$('#ssid-select').change(showHideEnterpriseSettings);
 
+	$('#network-select').change(showSettingsFields);
+
 	$.get("/networks", function(data){
-		if(data.length === 0){
-			$('.before-submit').hide();
-			$('#no-networks-message').removeClass('hidden');
-		} else {
-			networks = JSON.parse(data);
-			$.each(networks, function(i, val){
-				$('#ssid-select').append(
+		
+			config = JSON.parse(data);
+
+			$.each(config.networks, function(i, val){
+				$('#network-select').append(
 					$('<option>')
-						.text(val.ssid)
-						.attr('value', val.ssid)
-						.attr('data-security', val.security)
+						.text(val.name)
+						.attr('value', val.id)
+						.attr('data-config', val.config)
 				);
 			});
 
-			jQuery.proxy(showHideEnterpriseSettings, $('#ssid-select'))();
-		}
+			jQuery.proxy(showSettingsFields, $('#network-select'))();
+
+			if(config.ssids.length === 0){
+				$('.before-submit').hide();
+				$('#no-networks-message').removeClass('hidden');
+			} else {
+				$.each(config.ssids, function(i, val){
+					$('#ssid-select').append(
+						$('<option>')
+							.text(val.ssid)
+							.attr('value', val.ssid)
+							.attr('data-security', val.security)
+					);
+				});
+
+				jQuery.proxy(showHideEnterpriseSettings, $('#ssid-select'))();
+			}
+			
 	});
 
 	$('#connect-form').submit(function(ev){

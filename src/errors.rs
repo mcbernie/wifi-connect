@@ -58,6 +58,10 @@ error_chain! {
             description("Cannot find a WiFi device")
         }
 
+        NoEthDevice {
+            description("Cannot find a Ethernet device")
+        }
+
         NoAccessPoints {
             description("Getting access points failed")
         }
