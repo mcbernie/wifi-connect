@@ -466,7 +466,7 @@ impl NetworkCommandHandler {
                 let output = Command::new("nmcli")
                     .arg("c")
                     .arg("add") 
-                    .arg(format!("static-{}", &interface))
+                    .arg(format!("\"static-{}\"", &interface))
                     .arg("ifname")
                     .arg(&interface)
                     .arg("type")
@@ -477,27 +477,28 @@ impl NetworkCommandHandler {
                     .arg(gw)
                     .output()
                     .expect("failed to crate new connection");
+                info!("err add:{}", from_utf8(&output.stderr).unwrap());
                 info!("add:{}", from_utf8(&output.stdout).unwrap());
                 
 
                 let output = Command::new("nmcli")
                     .arg("c")
                     .arg("mod") 
-                    .arg(format!("static-{}", &interface))
+                    .arg(format!("\"static-{}\"", &interface))
                     .arg("ipv4.dns")
                     .arg(dns)
                     .output()
                     .expect(&format!("failed to set dns for static-{}", &interface));
+                info!("err mod:{}", from_utf8(&output.stderr).unwrap());
                 info!("mod:{}", from_utf8(&output.stdout).unwrap());
                     
                 let output = Command::new("nmcli")
                     .arg("c")
                     .arg("up") 
-                    .arg(format!("static-{}", &interface))
-                    .arg("iface")
-                    .arg(&interface)
+                    .arg(format!("\"static-{}\"", &interface))
                     .output()
                     .expect(&format!("failed to go online with static-{}", &interface));
+                info!("err up:{}", from_utf8(&output.stderr).unwrap());
                 info!("up:{}", from_utf8(&output.stdout).unwrap());
                 
 
