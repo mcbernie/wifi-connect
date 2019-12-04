@@ -473,7 +473,7 @@ fn is_eth_dhcp(con_uuid: &String) -> Result<bool> {
         .output()
         .expect("failed to execute get ipv4.method");
 
-    let outputstr = from_utf8(&output.stdout).unwrap().trim().to_string();
+    let outputstr = from_utf8(&output.stdout).unwrap().trim();
     info!("ipv4.method for {} is {}", con_uuid, outputstr);
     match outputstr {
         "auto" => {
