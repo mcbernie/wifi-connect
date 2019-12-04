@@ -60,18 +60,18 @@ $(function(){
 							.attr('value', "ethernet")
 				);
 
-				if (config.ethernet.Static && config.ethernet.Static .length >= 0) {
+				if (config.ethernet.Static && config.ethernet.Static .length > 0) {
 					$('#eth_ipaddress').val(config.ethernet.Static[0]);
 					$('#eth_subnet').val(config.ethernet.Static[1]);
 					$('#eth_gateway').val(config.ethernet.Static[2]);
 					$('#eth_dns').val(config.ethernet.Static[3]);
 				}
 
-				if (config.ethernet.Dhcp && config.ethernet.Dhcp.length >= 0) {
-					$('#eth_ipaddress').val(config.ethernet.Static[0]);
-					$('#eth_subnet').val(config.ethernet.Static[1]);
-					$('#eth_gateway').val(config.ethernet.Static[2]);
-					$('#eth_dns').val(config.ethernet.Static[3]);
+				if (config.ethernet.Dhcp && config.ethernet.Dhcp.length > 0) {
+					$('#eth_ipaddress').val(config.ethernet.Dhcp[0]);
+					$('#eth_subnet').val(config.ethernet.Dhcp[1]);
+					$('#eth_gateway').val(config.ethernet.Dhcp[2]);
+					$('#eth_dns').val(config.ethernet.Dhcp[3]);
 				}
 			}
 

@@ -466,6 +466,7 @@ impl NetworkCommandHandler {
                 let output = Command::new("nmcli")
                     .arg("c")
                     .arg("add") 
+                    .arg("con-name") 
                     .arg(format!("\"static-{}\"", &interface))
                     .arg("ifname")
                     .arg(&interface)
