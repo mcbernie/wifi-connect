@@ -29,21 +29,12 @@ $(function(){
 	}
 
 	$('#ssid-select').change(showHideEnterpriseSettings);
-
 	$('#network-select').change(showSettingsFields);
 
 	$.get("/networks", function(data){
 		
 			config = JSON.parse(data);
 
-			/*$.each(config, function(i, val){
-				$('#network-select').append(
-					$('<option>')
-						.text(val.name)
-						.attr('value', val.id)
-						.attr('data-config', val.config)
-				);
-			});*/
 
 			$('#network-select').append(
 				$('<option>')
@@ -63,6 +54,13 @@ $(function(){
 							.text(" Kabelgebundenes Netzwerk - Manuell")
 							.attr('value', "ethernet")
 				);
+
+				if (config.ethernet.Static.length >= 0) {
+					$('#eth_ipaddress').val(config.ethernet.Static[0]);
+					$('#eth_subnet').val(config.ethernet.Static[1]);
+					$('#eth_gateway').val(config.ethernet.Static[2]);
+					$('#eth_dns').val(config.ethernet.Static[3]);
+				}
 			}
 
 			jQuery.proxy(showSettingsFields, $('#network-select'))();

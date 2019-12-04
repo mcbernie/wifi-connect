@@ -123,7 +123,7 @@ impl NetworkCommandHandler {
         let exit_tx_server = exit_tx.clone();
 
         // determine if in "CONFIGMODE.tmp" exists in TMP
-        let ui_directory = match std::path::Path::new("/tmp/CONFIGMODE").exists() {
+        let ui_directory = match std::path::Path::new("/var/CONFIGMODE").exists() {
             true => {
                 config.ui_directory.clone()
             },
@@ -498,7 +498,9 @@ fn get_eth_ip(con_uuid: &String) -> Result<String> {
         .output()
         .expect("failed to execute get IP4.ADDRESS");
 
-        Ok(from_utf8(&output.stdout).unwrap().to_string().trim().to_string())
+    let o = from_utf8(&output.stdout).unwrap().to_string().trim().split("/")[0];
+
+    Ok(o.to_string())
 }
 
 fn get_eth_gw(con_uuid: &String) -> Result<String> {
