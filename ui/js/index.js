@@ -1,23 +1,20 @@
 $(function(){
 	var networks = undefined;
 
-	function showHideEnterpriseSettings() {
+	function showSettingsFields() {
 		var field_to_show = $(this).find(':selected').attr('value');
 		$('#ethernet').hide();
 		$('#ethernet-dhcp').hide();
 		$('#wlan').hide();
 
 		$('#' + field_to_show).show();
-
-		
-
 	}
 
 	$('#ethernet').hide();
 	$('#ethernet-dhcpp').hide();
 	$('#wlan').hide();
 
-	function showSettingsFields() {
+	function showHideEnterpriseSettings() {
 		var security = $(this).find(':selected').attr('data-security');
 		if(security === 'enterprise') {
 			$('#identity-group').show();
@@ -65,6 +62,7 @@ $(function(){
 
 			jQuery.proxy(showSettingsFields, $('#network-select'))();
 
+			$('#wlan').show();
 			if(config.ssids.length === 0){
 				$('.before-submit').hide();
 				$('#no-networks-message').removeClass('hidden');
