@@ -223,27 +223,65 @@ fn start(req: &mut Request) -> IronResult<Response> {
 }
 
 fn connect(req: &mut Request) -> IronResult<Response> {
-    let (ssid, identity, passphrase) = {
-        let params = get_request_ref!(req, Params, "Getting request params failed");
-        let ssid = get_param!(params, "ssid", String);
-        let identity = get_param!(params, "identity", String);
-        let passphrase = get_param!(params, "passphrase", String);
-        (ssid, identity, passphrase)
-    };
 
-    debug!("Incoming `connect` to access point `{}` request", ssid);
+    let params = get_request_ref!(req, Params, "Getting request params failed");
+    match &get_param!(params, "network-select", String) {
+        "ethernet" => {
+            let ip = get_param!(params, "eth_ipaddress", String);
+            let sn = get_param!(params, "eth_subnet", String);
+            let gw = get_param!(params, "eth_gateway", String);
+            let dns = get_param!(params, "eth_dns", String);
 
-    let request_state = get_request_state!(req);
+            debug!("Incoming `connect` to static ip `{}` request", ip);
 
-    let command = NetworkCommand::Connect {
-        ssid: ssid,
-        identity: identity,
-        passphrase: passphrase,
-    };
+            let request_state = get_request_state!(req);
 
-    if let Err(e) = request_state.network_tx.send(command) {
-        exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
-    } else {
-        Ok(Response::with(status::Ok))
+            let command = NetworkCommand::EthConnect {
+                ip: ip,
+                sn: sn,
+                gw: gw,
+                dns: dns,
+            };
+
+            if let Err(e) = request_state.network_tx.send(command) {
+                exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
+            } else {
+                Ok(Response::with(status::Ok))
+            }
+        },
+        "ethernet-dhcp" => {
+            let command = NetworkCommand::EthDhcp;
+
+            debug!("Incoming `connect` to DHCP request");
+            if let Err(e) = request_state.network_tx.send(command) {
+                exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
+            } else {
+                Ok(Response::with(status::Ok))
+            }
+
+        },
+        "wlan" => {
+            let ssid = get_param!(params, "ssid", String);
+            let identity = get_param!(params, "identity", String);
+            let passphrase = get_param!(params, "passphrase", String);
+
+            debug!("Incoming `connect` to access point `{}` request", ssid);
+
+            let request_state = get_request_state!(req);
+
+            let command = NetworkCommand::Connect {
+                ssid: ssid,
+                identity: identity,
+                passphrase: passphrase,
+            };
+
+            if let Err(e) = request_state.network_tx.send(command) {
+                exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
+            } else {
+                Ok(Response::with(status::Ok))
+            }
+        }
     }
+
+    
 }

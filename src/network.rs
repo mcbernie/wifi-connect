@@ -21,10 +21,17 @@ pub enum NetworkCommand {
     Activate,
     Timeout,
     Exit,
+    EthDhcp,
     Connect {
         ssid: String,
         identity: String,
         passphrase: String,
+    },
+    EthConnect {
+        ip: String,
+        sn: String,
+        gw: String,
+        dns: String,
     },
 }
 
@@ -202,6 +209,21 @@ impl NetworkCommandHandler {
                     info!("Exiting...");
                     return Ok(());
                 },
+                NetworkCommand::EthDhcp => {
+                    if self.connect_dhcp()? {
+                        return Ok(());
+                    }
+                },
+                NetworkCommand::EthConnect {
+                    ip,
+                    sn,
+                    gw,
+                    dns,
+                } => {
+                    if self.connect_static(&ip, &sn, &gw, &dns)? {
+                        return Ok(());
+                    }
+                },
                 NetworkCommand::Connect {
                     ssid,
                     identity,
@@ -341,6 +363,160 @@ impl NetworkCommandHandler {
         self.server_tx
             .send(NetworkCommandResponse::Network(nc))
             .chain_err(|| ErrorKind::SendAccessPointSSIDs)
+    }
+
+    fn connect_dhcp(&mut self) -> Result<bool> {
+        use std::process::Command;
+
+        match self.ethernet_device {
+            Some(device) => {
+                let interface = device.interface().to_string();
+                match get_eth_uuid(&interface) {
+                    Ok(uuid) => {
+                        if uuid != "" {
+                            info!("remove existing connection {}", uuid);
+                            let _result = Command::new("nmcli")
+                                .arg("c")
+                                .arg("del")
+                                .arg(uuid)
+                                .output()
+                                .expect("failed to remove existing connect");
+                        }
+
+
+                    },
+                    Err(_) => {},
+                };
+
+                let _output = Command::new("nmcli")
+                    .arg("c")
+                    .arg("add") 
+                    .arg(format!("dhcp-{}", interface))
+                    .arg("ifname")
+                    .arg(interface)
+                    .arg("type")
+                    .arg("ethernet")
+                    .output()
+                    .expect("failed to crate new connection");
+                
+                let _output = Command::new("nmcli")
+                    .arg("c")
+                    .arg("mod") 
+                    .arg(format!("dhcp-{}", interface))
+                    .arg("ipv4.method")
+                    .arg("auto")
+                    .output()
+                    .expect(&format!("failed to set dns for dhcp-{}", interface));
+                    
+                let _output = Command::new("nmcli")
+                    .arg("c")
+                    .arg("up") 
+                    .arg(format!("dhcp-{}", interface))
+                    .arg("iface")
+                    .arg(interface)
+                    .output()
+                    .expect(&format!("failed to go online with dhcp-{}", interface));
+                
+
+                match wait_for_connectivity(&self.manager, 20) {
+                    Ok(has_connectivity) => {
+                        if has_connectivity {
+                            info!("Internet connectivity established");
+                        } else {
+                            warn!("Cannot establish Internet connectivity");
+                        }
+                    },
+                    Err(err) => error!("Getting Internet connectivity failed: {}", err),
+                }
+
+                return Ok(true);
+            },
+            None => {
+                error!("Could not find ethernet device")
+            }
+        }
+        
+        
+        Ok(false)
+    }
+
+    fn connect_static(&mut self, ip: &str, sn: &str, gw: &str, dns: &str) -> Result<bool> {
+        use std::process::Command;
+
+        match self.ethernet_device {
+            Some(device) => {
+                let interface = device.interface().to_string();
+                match get_eth_uuid(&interface) {
+                    Ok(uuid) => {
+                        if uuid != "" {
+                            info!("remove existing connection {}", uuid);
+                            let _result = Command::new("nmcli")
+                                .arg("c")
+                                .arg("del")
+                                .arg(uuid)
+                                .output()
+                                .expect("failed to remove existing connect");
+                        }
+
+
+                    },
+                    Err(_) => {},
+                };
+
+                let _output = Command::new("nmcli")
+                    .arg("c")
+                    .arg("add") 
+                    .arg(format!("static-{}", interface))
+                    .arg("ifname")
+                    .arg(interface)
+                    .arg("type")
+                    .arg("ethernet")
+                    .arg("ip4")
+                    .arg(format!("{}/24", ip))
+                    .arg("gw4")
+                    .arg(gw)
+                    .output()
+                    .expect("failed to crate new connection");
+                
+                let _output = Command::new("nmcli")
+                    .arg("c")
+                    .arg("mod") 
+                    .arg(format!("static-{}", interface))
+                    .arg("ipv4.dns")
+                    .arg(dns)
+                    .output()
+                    .expect(&format!("failed to set dns for static-{}", interface));
+                    
+                let _output = Command::new("nmcli")
+                    .arg("c")
+                    .arg("up") 
+                    .arg(format!("static-{}", interface))
+                    .arg("iface")
+                    .arg(interface)
+                    .output()
+                    .expect(&format!("failed to go online with static-{}", interface));
+                
+
+                match wait_for_connectivity(&self.manager, 20) {
+                    Ok(has_connectivity) => {
+                        if has_connectivity {
+                            info!("Internet connectivity established");
+                        } else {
+                            warn!("Cannot establish Internet connectivity");
+                        }
+                    },
+                    Err(err) => error!("Getting Internet connectivity failed: {}", err),
+                }
+
+                return Ok(true);
+            },
+            None => {
+                error!("Could not find ethernet device")
+            }
+        }
+        
+        
+        Ok(false)
     }
 
     fn connect(&mut self, ssid: &str, identity: &str, passphrase: &str) -> Result<bool> {

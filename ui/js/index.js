@@ -12,7 +12,7 @@ $(function(){
 
 	$('#ethernet').hide();
 	$('#ethernet-dhcpp').hide();
-	$('#wlan').show();
+	$('#wlan').hide();
 
 	$('#eth_ipaddress').ipaddress();
 	$('#eth_subnet').ipaddress();
@@ -35,12 +35,17 @@ $(function(){
 		
 			config = JSON.parse(data);
 
+			if ( config.ssids.length > 0) {
 
-			$('#network-select').append(
-				$('<option>')
-						.text("WLAN")
-						.attr('value', "wlan")
-			);
+				$('#network-select').append(
+					$('<option>')
+							.text("WLAN")
+							.attr('value', "wlan")
+				);
+				$('#wlan').show();
+			} {
+				$('#wlan').hide();
+			}
 
 			if (config.ethernet) {
 				$('#network-select').append(
