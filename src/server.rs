@@ -206,7 +206,7 @@ fn start(req: &mut Request) -> IronResult<Response> {
     info!("start config mode called..");
     
 
-    match File::create("/var/CONFIGMODE") {
+    match File::create("/var/PRECONFIGMODE") {
         Ok(mut file) => {
             info!("create configmode file and reboot...");
             file.write_all(b"ENABLE CONFIG MODE");

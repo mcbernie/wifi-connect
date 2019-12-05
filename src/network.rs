@@ -270,6 +270,29 @@ impl NetworkCommandHandler {
             }
         };
 
+        match std::path::Path::new("/var/PRECONFIGMODE").exists() {
+            true => {
+                use std::fs;
+                use std::fs::File;
+                use std::io::prelude::*;
+                let _  = fs::remove_file("/var/PRECONFIGMODE");
+
+                match File::create("/var/CONFIGMODE") {
+                    Ok(mut file) => {
+                        info!("create configmode file and reboot...");
+                        file.write_all(b"ENABLE CONFIG MODE");
+                        let _output = Command::new("reboot").arg("now").output();
+                    },
+                    Err(e) => {
+                        debug!("Error on set Config Mode");
+                    }
+                }
+            },
+            false => {
+                
+            }
+        };
+
         
 
         let _ = exit_tx.send(result);
