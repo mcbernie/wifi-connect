@@ -47,7 +47,7 @@ $(function(){
 				$('#wlan').hide();
 			}
 
-			if (config.ethernet) {
+			if (config.ethernet && config.ethernet != "None") {
 				$('#network-select').append(
 					$('<option>')
 							.text(" Kabelgebundenes Netzwerk - DHCP")

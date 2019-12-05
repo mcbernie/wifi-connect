@@ -15,6 +15,7 @@ use config::Config;
 use dnsmasq::start_dnsmasq;
 use server::start_server;
 use std::str::{FromStr,from_utf8};
+use std::fs;
 
 
 pub enum NetworkCommand {
@@ -132,6 +133,9 @@ impl NetworkCommandHandler {
         // determine if in "CONFIGMODE.tmp" exists in TMP
         let ui_directory = match std::path::Path::new("/var/CONFIGMODE").exists() {
             true => {
+                // remove 
+                let _  = fs::remove_file("/var/CONFIGMODE");
+
                 config.ui_directory.clone()
             },
             false => {
@@ -257,18 +261,6 @@ impl NetworkCommandHandler {
         if let Some(ref connection) = self.portal_connection {
             let _ = stop_portal_impl(connection, &self.config);
         }
-
-        // remove 
-        // determine if in "CONFIGMODE.tmp" exists in TMP
-        match std::path::Path::new("/var/CONFIGMODE").exists() {
-            true => {
-                let _  = fs::remove_file("/var/CONFIGMODE");
-                let _output = Command::new("reboot").arg("now").output();
-            },
-            false => {
-                
-            }
-        };
 
         match std::path::Path::new("/var/PRECONFIGMODE").exists() {
             true => {
@@ -429,7 +421,8 @@ impl NetworkCommandHandler {
                 let _output = Command::new("nmcli")
                     .arg("c")
                     .arg("add") 
-                    .arg(format!("dhcp-{}", &interface))
+                    .arg("con-name") 
+                    .arg(format!("\"dhcp-{}\"", &interface))
                     .arg("ifname")
                     .arg(&interface)
                     .arg("type")
@@ -440,7 +433,7 @@ impl NetworkCommandHandler {
                 let _output = Command::new("nmcli")
                     .arg("c")
                     .arg("mod") 
-                    .arg(format!("dhcp-{}", &interface))
+                    .arg(format!("\"dhcp-{}\"", &interface))
                     .arg("ipv4.method")
                     .arg("auto")
                     .output()
@@ -449,7 +442,7 @@ impl NetworkCommandHandler {
                 let _output = Command::new("nmcli")
                     .arg("c")
                     .arg("up") 
-                    .arg(format!("dhcp-{}", &interface))
+                    .arg(format!("\"dhcp-{}\"", &interface))
                     .arg("iface")
                     .arg(&interface)
                     .output()
