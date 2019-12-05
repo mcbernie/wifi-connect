@@ -249,6 +249,9 @@ impl NetworkCommandHandler {
     }
 
     fn stop(&mut self, exit_tx: &Sender<ExitResult>, result: ExitResult) {
+        use std::process::Command;
+        use std::fs;
+
         let _ = self.dnsmasq.kill();
 
         if let Some(ref connection) = self.portal_connection {
@@ -259,10 +262,7 @@ impl NetworkCommandHandler {
         // determine if in "CONFIGMODE.tmp" exists in TMP
         match std::path::Path::new("/var/CONFIGMODE").exists() {
             true => {
-                use std::fs;
                 let _  = fs::remove_file("/var/CONFIGMODE");
-
-                use std::process::Command;
                 let _output = Command::new("reboot").arg("now").output();
             },
             false => {
@@ -272,11 +272,9 @@ impl NetworkCommandHandler {
 
         match std::path::Path::new("/var/PRECONFIGMODE").exists() {
             true => {
-                use std::fs;
                 use std::fs::File;
                 use std::io::prelude::*;
                 let _  = fs::remove_file("/var/PRECONFIGMODE");
-
                 match File::create("/var/CONFIGMODE") {
                     Ok(mut file) => {
                         info!("create configmode file and reboot...");
