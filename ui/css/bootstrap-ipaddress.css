@@ -40,3 +40,32 @@
     -ms-box-shadow: none;
     box-shadow: none;
 }
+
+
+.btn-success {
+    border-radius: 0;
+    background-color: #09b;
+    border-color: #09b;
+}
+
+.btn-success:hover {
+    border-color: #09b;
+    background-color: #09b;
+}
+
+.btn-success:focus, .btn:focus {
+    border-color: #002d9c;
+    background-color: #002d9c;
+}
+
+
+.btn-success:active, .btn:active {
+    border-color: #002d9c!important;
+    background-color: #002d9c!important;
+}
+
+
+.btn {
+    border-color: #09b;
+    background-color: #09b;
+}
