@@ -108,8 +108,6 @@ struct RedirectMiddleware;
 impl AfterMiddleware for RedirectMiddleware {
     fn catch(&self, req: &mut Request, err: IronError) -> IronResult<Response> {
         
-        warn!("make a catch on the request {:?}", req);
-        
         let gateway = {
             let request_state = get_request_state!(req);
             format!("{}", request_state.gateway)
