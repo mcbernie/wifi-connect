@@ -13,9 +13,6 @@ pub fn start_dnsmasq(config: &Config) -> Result<Child> {
         &format!("--dhcp-option=37,http://{}", config.gateway),
         &format!("--interface={}", config.ap_interface),
         "--keep-in-foreground",
-        "--bind-interfaces",
-        "--except-interface=lo",
-        "--conf-file",
         "--no-hosts",
     ];
 
