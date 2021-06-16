@@ -54,7 +54,7 @@ pub fn get_config() -> Config {
         )
         .arg(
             Arg::with_name("ap-interface")
-                .short("a")
+                .short("w")
                 .long("ap-interface")
                 .value_name("ap_inferface")
                 .help("network interface to be used for hostapd")
