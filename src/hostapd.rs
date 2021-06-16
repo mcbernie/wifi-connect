@@ -10,14 +10,14 @@ use config::Config;
 
 
 pub fn create_phy_if(config: &Config) {
-    remove_phy_if(config)
+    remove_phy_if(config);
 
-    let _cmd = Command("iw", "phy", "phy0", "interface", config.ap_interface, "type", "__ap").output();
-    let _cmd = Command("ip", "addr", "add", &format!("{}/24", config.gateway), "dev", config.ap_interface).output();
+    let _cmd = Command::new("iw").arg("phy").arg("phy0").arg("interface").arg(config.ap_interface).arg("type").arg("__ap").output();
+    let _cmd = Command::new("ip").arg("addr").arg("add").arg(&format!("{}/24", config.gateway).arg("dev").arg(config.ap_interface).output();
 }
 
 pub fn remove_phy_if(config: &Config) {
-    let _cmd = Command("iw", config.ap_interface, "ap", "del").output();
+    let _cmd = Command::new("iw").arg(config.ap_interface).arg("ap").arg("del").output();
 }
 
 pub fn start_hostapd(config: &Config) -> Result<Child> {
@@ -46,7 +46,6 @@ fn write_config(interface: &str, ssid: &str,) -> Result<&str, Error> {
     ]
 
     let mut file = File::create(dir).expect("failed to open file");
-    defer file.close();
     file.write_all(&config_params).expect("failed to write file");
 
     return Ok(dir.display())
