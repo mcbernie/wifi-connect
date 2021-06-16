@@ -30,20 +30,13 @@ pub fn remove_phy_if(config: &Config) {
 
 pub fn start_hostapd(config: &Config) -> Result<Child> {
     // create a config in tmp
-    warn!("before start hostapd wait 20 seconds:");
-    thread::sleep(Duration::from_secs(20));
+
     warn!("run hostapd");
     let config_path = write_config(&config.ap_interface, &config.ssid).unwrap();
-    let c = Command::new("hostapd")
+    Command::new("hostapd")
         .arg(config_path)
         .spawn()
-        .chain_err(|| ErrorKind::Hostapd);
-
-    warn!("wait 40 seconds");
-    thread::sleep(Duration::from_secs(20));
-    warn!("next...");
-
-    c
+        .chain_err(|| ErrorKind::Hostapd)
 }
 
 
