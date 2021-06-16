@@ -37,8 +37,9 @@ pub fn start_hostapd(config: &Config) -> Result<Child> {
         .spawn()
         .chain_err(|| ErrorKind::Hostapd);
 
-    warn!("wait 20 seconds");
+    warn!("wait 40 seconds");
     thread::sleep(Duration::from_secs(20));
+    warn!("next...");
 
     c
 }
