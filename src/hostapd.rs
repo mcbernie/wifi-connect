@@ -13,7 +13,7 @@ pub fn create_phy_if(config: &Config) {
     remove_phy_if(config);
 
     let _cmd = Command::new("iw").arg("phy").arg("phy0").arg("interface").arg(config.ap_interface).arg("type").arg("__ap").output();
-    let _cmd = Command::new("ip").arg("addr").arg("add").arg(&format!("{}/24", config.gateway).arg("dev").arg(config.ap_interface).output();
+    let _cmd = Command::new("ip").arg("addr").arg("add").arg(&format!("{}/24", config.gateway)).arg("dev").arg(config.ap_interface).output();
 }
 
 pub fn remove_phy_if(config: &Config) {
@@ -33,17 +33,17 @@ pub fn start_hostapd(config: &Config) -> Result<Child> {
 
 
 
-fn write_config(interface: &str, ssid: &str,) -> Result<&str, Error> {
+fn write_config(interface: &str, ssid: &str) -> Result<String> {
 
     let mut dir = env::temp_dir();
     dir.push("hostapd.config");
 
     let config_params = [
         &format!("interface={}",interface),
-        "driver=nl80211"
+        "driver=nl80211",
         &format!("ssid={}",ssid),
-        "channel=1"
-    ]
+        "channel=1",
+    ];
 
     let mut file = File::create(dir).expect("failed to open file");
     file.write_all(&config_params).expect("failed to write file");
