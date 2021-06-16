@@ -51,6 +51,11 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
         "driver=nl80211",
         &format!("ssid={}",ssid),
         "channel=1",
+        "logger_syslog=-1",
+        "logger_syslog_level=2",
+        "ctrl_interface=/var/run/hostapd",
+        "ctrl_interface_group=0",
+        "hw_mode=g",
     ];
 
     let mut file = File::create(dir).expect("failed to open file");
