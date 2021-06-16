@@ -32,13 +32,15 @@ pub fn start_hostapd(config: &Config) -> Result<Child> {
     // create a config in tmp
     warn!("run hostapd");
     let config_path = write_config(&config.ap_interface, &config.ssid).unwrap();
-    Command::new("hostapd")
+    let c = Command::new("hostapd")
         .arg(config_path)
         .spawn()
         .chain_err(|| ErrorKind::Hostapd)
 
     warn!("wait 20 seconds");
     thread::sleep(Duration::from_secs(20));
+
+    c
 }
 
 
