@@ -96,11 +96,14 @@ impl NetworkCommandHandler {
             }
         };
 
-        create_phy_if(config);
-        thread::sleep(Duration::from_millis(500));
-        let hostapd = start_hostapd(config)?;
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(250));
         let dnsmasq = start_dnsmasq(config)?;
+
+        create_phy_if(config);
+        thread::sleep(Duration::from_millis(250));
+        let hostapd = start_hostapd(config)?;
+
+        thread::sleep(Duration::from_millis(250));
 
         let (server_tx, server_rx) = channel();
 
