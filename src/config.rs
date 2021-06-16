@@ -154,7 +154,7 @@ pub fn get_config() -> Config {
         |v| Some(v.to_string()),
     );
 
-    let ap_inferface: Option<String> = matches.value_of("ap-interface").map_or_else(
+    let ap_interface: String = matches.value_of("ap-interface").map_or_else(
         || env::var("PORTAL_AP_INTERFACE").unwrap_or_else(|_| DEFAULT_AP_INTERFACE.to_string()),
         |v| Some(v.to_string()),
     );

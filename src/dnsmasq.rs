@@ -1,7 +1,5 @@
 use std::process::{Child, Command};
 
-use network_manager::Device;
-
 use errors::*;
 use config::Config;
 

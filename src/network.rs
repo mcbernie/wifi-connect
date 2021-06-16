@@ -258,16 +258,15 @@ impl NetworkCommandHandler {
 
     fn stop(&mut self, exit_tx: &Sender<ExitResult>, result: ExitResult) {
         use std::process::Command;
-        use std::fs;
 
         let _ = self.dnsmasq.kill();
         let _ = self.hostapd.kill();
 
         remove_phy_if();
 
-        if let Some(ref connection) = self.portal_connection {
+        /*if let Some(ref connection) = self.portal_connection {
             let _ = stop_portal_impl(connection, &self.config);
-        }
+        }*/
 
         match std::path::Path::new("/var/PRECONFIGMODE").exists() {
             true => {
