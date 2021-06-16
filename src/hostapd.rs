@@ -49,9 +49,9 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
 
     for row in &config_params{                                                                                                                                                                  
         //file.write_all((*row)).expect("failed to write file");       
-        writeln!(file, row)?;                                                                                                              
+        writeln!(file, "{}", row)?;                                                                                                              
     }     
     
 
-    return Ok(dir.display())
+    return Ok(dir.display().to_string())
 }
