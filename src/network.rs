@@ -220,6 +220,7 @@ impl NetworkCommandHandler {
 
             match command {
                 NetworkCommand::Activate => {
+                    warn!("activate received");
                     self.activate()?;
                 },
                 NetworkCommand::Timeout => {
@@ -235,6 +236,7 @@ impl NetworkCommandHandler {
                     return Ok(());
                 },
                 NetworkCommand::EthDhcp => {
+                    warn!("ethdhcp received");
                     if self.connect_dhcp()? {
                         return Ok(());
                     }
@@ -256,6 +258,7 @@ impl NetworkCommandHandler {
                     identity,
                     passphrase,
                 } => {
+                    warn!("connect");
                     if self.connect(&ssid, &identity, &passphrase)? {
                         return Ok(());
                     }

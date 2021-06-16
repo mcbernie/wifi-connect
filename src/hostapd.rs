@@ -33,10 +33,12 @@ pub fn start_hostapd(config: &Config) -> Result<Child> {
     warn!("run hostapd");
     let config_path = write_config(&config.ap_interface, &config.ssid).unwrap();
     Command::new("hostapd")
-        .arg("-d")
         .arg(config_path)
         .spawn()
         .chain_err(|| ErrorKind::Hostapd)
+
+    warn!("wait 20 seconds");
+    thread::sleep(Duration::from_secs(20));
 }
 
 
@@ -59,6 +61,7 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
         "ctrl_interface=/var/run/hostapd",
         "ctrl_interface_group=0",
         "hw_mode=g",
+
     ];
 
     let mut file = File::create(dir).expect("failed to open file");
