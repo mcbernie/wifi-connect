@@ -97,9 +97,9 @@ impl NetworkCommandHandler {
         };
 
         create_phy_if(config);
-        thread::sleep(Duration::from_sec(1));
+        thread::sleep(Duration::from_secs(1));
         let hostapd = start_hostapd(config)?;
-        thread::sleep(Duration::from_sec(1));
+        thread::sleep(Duration::from_secs(1));
         let dnsmasq = start_dnsmasq(config)?;
 
         let (server_tx, server_rx) = channel();
