@@ -20,7 +20,7 @@ const DEFAULT_AP_INTERFACE: &str = "ap";
 pub struct Config {
     pub interface: Option<String>,
     pub eth_inferface: Option<String>,
-    pub ap_interface: Option<String>,
+    pub ap_interface: String,
     pub ssid: String,
     pub passphrase: Option<String>,
     pub gateway: Ipv4Addr,

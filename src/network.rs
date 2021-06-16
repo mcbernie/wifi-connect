@@ -98,7 +98,7 @@ impl NetworkCommandHandler {
 
         create_phy_if(config);
 
-        let hostapd = start_hostapd(config);
+        let hostapd = start_hostapd(config)?;
         let dnsmasq = start_dnsmasq(config)?;
 
         let (server_tx, server_rx) = channel();
@@ -262,7 +262,7 @@ impl NetworkCommandHandler {
         let _ = self.dnsmasq.kill();
         let _ = self.hostapd.kill();
 
-        remove_phy_if();
+        remove_phy_if(&self.config);
 
         /*if let Some(ref connection) = self.portal_connection {
             let _ = stop_portal_impl(connection, &self.config);
@@ -297,7 +297,7 @@ impl NetworkCommandHandler {
     fn activate(&mut self) -> ExitResult {
         self.activated = true;
 
-        let aps = get_access_points(&self.device);
+        let aps = get_access_points(&self.device).unwrap();
         self.access_points = aps;
         let ssids = get_networks(&self.access_points);
         
