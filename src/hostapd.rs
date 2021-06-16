@@ -5,8 +5,6 @@ use std::io::prelude::*;
 use std::path::Path;
 use std::env;
 
-use network_manager::Device;
-
 use errors::*;
 use config::Config;
 
@@ -14,16 +12,12 @@ use config::Config;
 pub fn create_phy_if(config: &Config) {
     remove_phy_if(config)
 
-    cmd := exec.Command("iw", "phy", "phy0", "interface", config.ap_interface, "type", "__ap")
-    err := cmd.Run()
-
-    cmd = exec.Command("ip", "addr", "add", &format!("{}/24", config.gateway), "dev", config.ap_interface)
-    err = cmd.Run()
+    let _cmd = Command("iw", "phy", "phy0", "interface", config.ap_interface, "type", "__ap").output();
+    let _cmd = Command("ip", "addr", "add", &format!("{}/24", config.gateway), "dev", config.ap_interface).output();
 }
 
 pub fn remove_phy_if(config: &Config) {
-    cmd := exec.Command("iw", config.ap_interface, "ap", "del")
-	err := cmd.Run()
+    let _cmd = Command("iw", config.ap_interface, "ap", "del").output();
 }
 
 pub fn start_hostapd(config: &Config) -> Result<Child> {

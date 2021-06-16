@@ -179,6 +179,8 @@ fn networks(req: &mut Request) -> IronResult<Response> {
 
     let request_state = get_request_state!(req);
 
+    
+
     if let Err(e) = request_state.network_tx.send(NetworkCommand::Activate) {
         return exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandActivate);
     }

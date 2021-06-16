@@ -156,7 +156,7 @@ pub fn get_config() -> Config {
 
     let ap_interface: String = matches.value_of("ap-interface").map_or_else(
         || env::var("PORTAL_AP_INTERFACE").unwrap_or_else(|_| DEFAULT_AP_INTERFACE.to_string()),
-        |v| Some(v.to_string()),
+        String::from
     );
 
     let ssid: String = matches.value_of("portal-ssid").map_or_else(
