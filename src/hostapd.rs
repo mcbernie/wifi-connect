@@ -29,7 +29,7 @@ pub fn remove_phy_if(config: &Config) {
 pub fn start_hostapd(config: &Config) -> Result<Child> {
     // create a config in tmp
     let config_path = write_config(&config.ap_interface, &config.ssid).unwrap();
-
+    thread::sleep(Duration::from_millis(1000));
     Command::new("hostapd")
         .arg(config_path)
         .spawn()
