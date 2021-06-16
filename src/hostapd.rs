@@ -35,7 +35,7 @@ pub fn start_hostapd(config: &Config) -> Result<Child> {
     let c = Command::new("hostapd")
         .arg(config_path)
         .spawn()
-        .chain_err(|| ErrorKind::Hostapd)
+        .chain_err(|| ErrorKind::Hostapd);
 
     warn!("wait 20 seconds");
     thread::sleep(Duration::from_secs(20));
