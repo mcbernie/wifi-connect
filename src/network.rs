@@ -121,7 +121,7 @@ impl NetworkCommandHandler {
         let hostapd = start_hostapd(config)?;
         thread::sleep(Duration::from_millis(5000));
         warn!("first kill...");
-        let _ = self.hostapd.kill();
+        let _ = hostapd.kill();
 
         warn!("second start....");
         thread::sleep(Duration::from_millis(250));
