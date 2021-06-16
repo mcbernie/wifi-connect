@@ -104,8 +104,7 @@ impl NetworkCommandHandler {
         let dnsmasq = start_dnsmasq(config)?;
 
         
-        thread::sleep(Duration::from_millis(250));
-        let hostapd = start_hostapd(config)?;
+        
 
         thread::sleep(Duration::from_millis(250));
 
@@ -117,8 +116,14 @@ impl NetworkCommandHandler {
         warn!("spawn_timeouter");
         Self::spawn_activity_timeout(config, network_tx.clone());
 
+
+        thread::sleep(Duration::from_millis(250));
+        let hostapd = start_hostapd(config)?;
+
         let config = config.clone();
         let activated = false;
+
+        
 
         Ok(NetworkCommandHandler {
             manager,
