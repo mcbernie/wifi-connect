@@ -30,8 +30,8 @@ pub fn remove_phy_if(config: &Config) {
 
 pub fn start_hostapd(config: &Config) -> Result<Child> {
     // create a config in tmp
-    warn!("before start hostapd wait 10 seconds:");
-    thread::sleep(Duration::from_secs(10));
+    warn!("before start hostapd wait 20 seconds:");
+    thread::sleep(Duration::from_secs(20));
     warn!("run hostapd");
     let config_path = write_config(&config.ap_interface, &config.ssid).unwrap();
     let c = Command::new("hostapd")
