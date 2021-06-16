@@ -118,14 +118,14 @@ impl NetworkCommandHandler {
 
         
         warn!("first start hostapd..");
-        let hostapd = start_hostapd(config)?;
+        let mut hostapd = start_hostapd(config)?;
         thread::sleep(Duration::from_millis(5000));
         warn!("first kill...");
         let _ = hostapd.kill();
 
         warn!("second start....");
         thread::sleep(Duration::from_millis(250));
-        let hostapd = start_hostapd(config)?;
+        hostapd = start_hostapd(config)?;
 
 
         let config = config.clone();
