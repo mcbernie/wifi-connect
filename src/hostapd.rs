@@ -14,15 +14,16 @@ use config::Config;
 
 pub fn create_phy_if(config: &Config) {
     remove_phy_if(config);
-    thread::sleep(Duration::from_secs(1));
+    thread::sleep(Duration::from_millis(250));
 
-    let _cmd = Command::new("iw").arg("phy").arg("phy0").arg("interface").arg(&format!("{}", config.ap_interface)).arg("type").arg("__ap").output();
-    thread::sleep(Duration::from_secs(1));
+    let _cmd = Command::new("iw").arg("phy").arg("phy0").arg("interface").arg("add").arg(&format!("{}", config.ap_interface)).arg("type").arg("__ap").output();
+    thread::sleep(Duration::from_millis(250));
+    let _cmd = Command::new("ip").arg("addr").arg("del").arg(&format!("{}/24", config.gateway)).arg("dev").arg(&format!("{}", config.ap_interface)).output();
     let _cmd = Command::new("ip").arg("addr").arg("add").arg(&format!("{}/24", config.gateway)).arg("dev").arg(&format!("{}", config.ap_interface)).output();
 }
 
 pub fn remove_phy_if(config: &Config) {
-    let _cmd = Command::new("iw").arg(&format!("{}", config.ap_interface)).arg("ap").arg("del").output().except();
+    let _cmd = Command::new("iw").arg("dev").arg(&format!("{}", config.ap_interface)).arg("del").output();
 }
 
 pub fn start_hostapd(config: &Config) -> Result<Child> {
