@@ -5,19 +5,24 @@ use std::io::prelude::*;
 use std::path::Path;
 use std::env;
 
+use std::thread;
+use std::time::Duration;
+
 use errors::*;
 use config::Config;
 
 
 pub fn create_phy_if(config: &Config) {
     remove_phy_if(config);
+    thread::sleep(Duration::from_secs(1));
 
     let _cmd = Command::new("iw").arg("phy").arg("phy0").arg("interface").arg(&format!("{}", config.ap_interface)).arg("type").arg("__ap").output();
+    thread::sleep(Duration::from_secs(1));
     let _cmd = Command::new("ip").arg("addr").arg("add").arg(&format!("{}/24", config.gateway)).arg("dev").arg(&format!("{}", config.ap_interface)).output();
 }
 
 pub fn remove_phy_if(config: &Config) {
-    let _cmd = Command::new("iw").arg(&format!("{}", config.ap_interface)).arg("ap").arg("del").output();
+    let _cmd = Command::new("iw").arg(&format!("{}", config.ap_interface)).arg("ap").arg("del").output().except();
 }
 
 pub fn start_hostapd(config: &Config) -> Result<Child> {
