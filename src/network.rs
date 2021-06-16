@@ -12,7 +12,10 @@ use network_manager::{AccessPoint, AccessPointCredentials, Connection, Connectio
 use errors::*;
 use exit::{exit, trap_exit_signals, ExitResult};
 use config::Config;
+
 use dnsmasq::start_dnsmasq;
+use hostapd::{start_hostapd, create_phy_if, remove_phy_if};
+
 use server::start_server;
 use std::str::{FromStr,from_utf8};
 use std::fs;
@@ -64,9 +67,9 @@ struct NetworkCommandHandler {
     device: Device,
     ethernet_device: Option<Device>,
     access_points: Vec<AccessPoint>,
-    portal_connection: Option<Connection>,
     config: Config,
     dnsmasq: process::Child,
+    hostapd: process::Child,
     server_tx: Sender<NetworkCommandResponse>,
     network_rx: Receiver<NetworkCommand>,
     activated: bool,
@@ -93,9 +96,10 @@ impl NetworkCommandHandler {
             }
         };
 
-        let portal_connection = Some(create_portal(&device, config)?);
+        create_phy_if(config);
 
-        let dnsmasq = start_dnsmasq(config, &device)?;
+        let hostapd = start_hostapd(config);
+        let dnsmasq = start_dnsmasq(config)?;
 
         let (server_tx, server_rx) = channel();
 
@@ -111,9 +115,9 @@ impl NetworkCommandHandler {
             device,
             ethernet_device,
             access_points,
-            portal_connection,
             config,
             dnsmasq,
+            hostapd,
             server_tx,
             network_rx,
             activated,
@@ -257,6 +261,9 @@ impl NetworkCommandHandler {
         use std::fs;
 
         let _ = self.dnsmasq.kill();
+        let _ = self.hostapd.kill();
+
+        remove_phy_if();
 
         if let Some(ref connection) = self.portal_connection {
             let _ = stop_portal_impl(connection, &self.config);
@@ -291,6 +298,8 @@ impl NetworkCommandHandler {
     fn activate(&mut self) -> ExitResult {
         self.activated = true;
 
+        let aps = get_access_points(&self.device);
+        self.access_points = aps;
         let ssids = get_networks(&self.access_points);
         
         let ethernet = {
@@ -559,12 +568,6 @@ impl NetworkCommandHandler {
     fn connect(&mut self, ssid: &str, identity: &str, passphrase: &str) -> Result<bool> {
         delete_existing_connections_to_same_network(&self.manager, ssid);
 
-        if let Some(ref connection) = self.portal_connection {
-            stop_portal(connection, &self.config)?;
-        }
-
-        self.portal_connection = None;
-
         self.access_points = get_access_points(&self.device)?;
 
         if let Some(access_point) = find_access_point(&self.access_points, ssid) {
@@ -607,8 +610,6 @@ impl NetworkCommandHandler {
         }
 
         self.access_points = get_access_points(&self.device)?;
-
-        self.portal_connection = Some(create_portal(&self.device, &self.config)?);
 
         Ok(false)
     }
@@ -910,39 +911,6 @@ fn find_access_point<'a>(access_points: &'a [AccessPoint], ssid: &str) -> Option
     }
 
     None
-}
-
-fn create_portal(device: &Device, config: &Config) -> Result<Connection> {
-    let portal_passphrase = config.passphrase.as_ref().map(|p| p as &str);
-
-    create_portal_impl(device, &config.ssid, &config.gateway, &portal_passphrase)
-        .chain_err(|| ErrorKind::CreateCaptivePortal)
-}
-
-fn create_portal_impl(
-    device: &Device,
-    ssid: &str,
-    gateway: &Ipv4Addr,
-    passphrase: &Option<&str>,
-) -> Result<Connection> {
-    info!("Starting access point...");
-    let wifi_device = device.as_wifi_device().unwrap();
-    let (portal_connection, _) = wifi_device.create_hotspot(ssid, *passphrase, Some(*gateway))?;
-    info!("Access point '{}' created", ssid);
-    Ok(portal_connection)
-}
-
-fn stop_portal(connection: &Connection, config: &Config) -> Result<()> {
-    stop_portal_impl(connection, config).chain_err(|| ErrorKind::StopAccessPoint)
-}
-
-fn stop_portal_impl(connection: &Connection, config: &Config) -> Result<()> {
-    info!("Stopping access point '{}'...", config.ssid);
-    connection.deactivate()?;
-    connection.delete()?;
-    thread::sleep(Duration::from_secs(1));
-    info!("Access point '{}' stopped", config.ssid);
-    Ok(())
 }
 
 fn wait_for_connectivity(manager: &NetworkManager, timeout: u64) -> Result<bool> {

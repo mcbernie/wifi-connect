@@ -29,6 +29,7 @@ mod config;
 mod network;
 mod server;
 mod dnsmasq;
+mod hostapd;
 mod logger;
 mod exit;
 mod privileges;

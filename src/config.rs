@@ -14,10 +14,13 @@ const DEFAULT_UI_DIRECTORY: &str = "ui";
 const DEFAULT_PRE_UI_DIRECTORY: &str = "ui-configmode";
 const DEFAULT_LISTENING_PORT: &str = "80";
 
+const DEFAULT_AP_INTERFACE: &str = "ap";
+
 #[derive(Clone)]
 pub struct Config {
     pub interface: Option<String>,
     pub eth_inferface: Option<String>,
+    pub ap_interface: Option<String>,
     pub ssid: String,
     pub passphrase: Option<String>,
     pub gateway: Ipv4Addr,
@@ -47,6 +50,14 @@ pub fn get_config() -> Config {
                 .long("ethernet-interface")
                 .value_name("eth_inferface")
                 .help("network interface to be used for Ethernet connection")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("ap-interface")
+                .short("a")
+                .long("ap-interface")
+                .value_name("ap_inferface")
+                .help("network interface to be used for hostapd")
                 .takes_value(true),
         )
         .arg(
@@ -143,6 +154,11 @@ pub fn get_config() -> Config {
         |v| Some(v.to_string()),
     );
 
+    let ap_inferface: Option<String> = matches.value_of("ap-interface").map_or_else(
+        || env::var("PORTAL_AP_INTERFACE").unwrap_or_else(|_| DEFAULT_AP_INTERFACE.to_string()),
+        |v| Some(v.to_string()),
+    );
+
     let ssid: String = matches.value_of("portal-ssid").map_or_else(
         || env::var("PORTAL_SSID").unwrap_or_else(|_| DEFAULT_SSID.to_string()),
         String::from,
@@ -187,6 +203,7 @@ pub fn get_config() -> Config {
     Config {
         interface: interface,
         eth_inferface: eth_inferface,
+        ap_interface: ap_interface,
         ssid: ssid,
         passphrase: passphrase,
         gateway: gateway,

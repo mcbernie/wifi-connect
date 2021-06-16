@@ -5,7 +5,7 @@ use network_manager::Device;
 use errors::*;
 use config::Config;
 
-pub fn start_dnsmasq(config: &Config, device: &Device) -> Result<Child> {
+pub fn start_dnsmasq(config: &Config) -> Result<Child> {
     let args = [
         &format!("--address=/#/{}", config.gateway),
         &format!("--dhcp-range={}", config.dhcp_range),
@@ -13,7 +13,7 @@ pub fn start_dnsmasq(config: &Config, device: &Device) -> Result<Child> {
         &format!("--dhcp-option=114,http://{}", config.gateway),
         &format!("--dhcp-option=103,http://{}", config.gateway),
         &format!("--dhcp-option=37,http://{}", config.gateway),
-        &format!("--interface={}", device.interface()),
+        &format!("--interface={}", config.ap_interface),
         "--keep-in-foreground",
         "--bind-interfaces",
         "--except-interface=lo",

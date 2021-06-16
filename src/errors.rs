@@ -107,6 +107,10 @@ error_chain! {
             description("Root privileges required")
             display("You need root privileges to run {}", app)
         }
+
+        Hostapd {
+            description("Spawning hostapd failed")
+        }
     }
 }
 
@@ -133,6 +137,7 @@ pub fn exit_code(e: &Error) -> i32 {
         ErrorKind::TrapExitSignals => 22,
         ErrorKind::RootPrivilegesRequired(_) => 23,
         ErrorKind::UnmanagedDevice(_) => 24,
+        ErrorKind::Hostapd => 25,
         _ => 1,
     }
 }
