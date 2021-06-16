@@ -12,12 +12,12 @@ use config::Config;
 pub fn create_phy_if(config: &Config) {
     remove_phy_if(config);
 
-    let _cmd = Command::new("iw").arg("phy").arg("phy0").arg("interface").arg(config.ap_interface).arg("type").arg("__ap").output();
-    let _cmd = Command::new("ip").arg("addr").arg("add").arg(&format!("{}/24", config.gateway)).arg("dev").arg(config.ap_interface).output();
+    let _cmd = Command::new("iw").arg("phy").arg("phy0").arg("interface").arg(&format!("{}", config.ap_interface)).arg("type").arg("__ap").output();
+    let _cmd = Command::new("ip").arg("addr").arg("add").arg(&format!("{}/24", config.gateway)).arg("dev").arg(&format!("{}", config.ap_interface)).output();
 }
 
 pub fn remove_phy_if(config: &Config) {
-    let _cmd = Command::new("iw").arg(config.ap_interface).arg("ap").arg("del").output();
+    let _cmd = Command::new("iw").arg(&format!("{}", config.ap_interface)).arg("ap").arg("del").output();
 }
 
 pub fn start_hostapd(config: &Config) -> Result<Child> {
@@ -38,6 +38,8 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
     let mut dir = env::temp_dir();
     dir.push("hostapd.config");
 
+    let finished_path = dir.display().to_string();
+
     let config_params = [
         &format!("interface={}",interface),
         "driver=nl80211",
@@ -53,5 +55,5 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
     }     
     
 
-    return Ok(dir.display().to_string())
+    return Ok(finished_path)
 }
