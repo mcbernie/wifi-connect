@@ -16,6 +16,7 @@ pub fn create_phy_if(config: &Config) {
     remove_phy_if(config);
     thread::sleep(Duration::from_millis(250));
 
+    warn!("create phy interface for wifi");
     let _cmd = Command::new("iw").arg("phy").arg("phy0").arg("interface").arg("add").arg(&format!("{}", config.ap_interface)).arg("type").arg("__ap").output();
     thread::sleep(Duration::from_millis(250));
     let _cmd = Command::new("ip").arg("addr").arg("del").arg(&format!("{}/24", config.gateway)).arg("dev").arg(&format!("{}", config.ap_interface)).output();
@@ -23,13 +24,14 @@ pub fn create_phy_if(config: &Config) {
 }
 
 pub fn remove_phy_if(config: &Config) {
+    warn!("remove_phy_if");
     let _cmd = Command::new("iw").arg("dev").arg(&format!("{}", config.ap_interface)).arg("del").output();
 }
 
 pub fn start_hostapd(config: &Config) -> Result<Child> {
     // create a config in tmp
+    warn!("run hostapd");
     let config_path = write_config(&config.ap_interface, &config.ssid).unwrap();
-    thread::sleep(Duration::from_millis(2000));
     Command::new("hostapd")
         .arg(config_path)
         .spawn()

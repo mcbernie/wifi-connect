@@ -96,10 +96,14 @@ impl NetworkCommandHandler {
             }
         };
 
+        warn!("startup process");
+        create_phy_if(config);
+
+
         thread::sleep(Duration::from_millis(250));
         let dnsmasq = start_dnsmasq(config)?;
 
-        create_phy_if(config);
+        
         thread::sleep(Duration::from_millis(250));
         let hostapd = start_hostapd(config)?;
 
@@ -107,8 +111,10 @@ impl NetworkCommandHandler {
 
         let (server_tx, server_rx) = channel();
 
+        warn!("spawn server");
         Self::spawn_server(config, exit_tx, server_rx, network_tx.clone());
 
+        warn!("spawn_timeouter");
         Self::spawn_activity_timeout(config, network_tx.clone());
 
         let config = config.clone();
@@ -212,12 +218,14 @@ impl NetworkCommandHandler {
                     self.activate()?;
                 },
                 NetworkCommand::Timeout => {
+                    warn!("receive timeout");
                     if !self.activated {
                         info!("Timeout reached. Exiting...");
                         return Ok(());
                     }
                 },
                 NetworkCommand::Exit => {
+                    warn!("recevie exit");
                     info!("Exiting...");
                     return Ok(());
                 },
@@ -232,7 +240,9 @@ impl NetworkCommandHandler {
                     gw,
                     dns,
                 } => {
+                    warn!("ethconnect received");
                     if self.connect_static(&ip, &sn, &gw, &dns)? {
+                        warn!("connected");
                         return Ok(());
                     }
                 },
@@ -262,9 +272,10 @@ impl NetworkCommandHandler {
 
     fn stop(&mut self, exit_tx: &Sender<ExitResult>, result: ExitResult) {
         use std::process::Command;
-
+        warn!("stop");
         let _ = self.dnsmasq.kill();
         let _ = self.hostapd.kill();
+
 
         remove_phy_if(&self.config);
 
@@ -300,6 +311,8 @@ impl NetworkCommandHandler {
 
     fn activate(&mut self) -> ExitResult {
         self.activated = true;
+
+        warn!("activate...(get networks and access points");
 
         let aps = get_access_points(&self.device).unwrap();
         self.access_points = aps;
@@ -401,6 +414,10 @@ impl NetworkCommandHandler {
             ssids: ssids,
             ethernet: ethernet,
         };
+
+        
+        warn!("send command after scan for networks");
+
         // determine if ethernet is aviable
         self.server_tx
             .send(NetworkCommandResponse::Network(nc))
