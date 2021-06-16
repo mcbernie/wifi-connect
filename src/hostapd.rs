@@ -48,7 +48,8 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
     let mut file = File::create(dir).expect("failed to open file");
 
     for row in &config_params{                                                                                                                                                                  
-        file.write_all((*row)).expect("failed to write file");                                                                                                                     
+        //file.write_all((*row)).expect("failed to write file");       
+        writeln!(file, row)?;                                                                                                              
     }     
     
 
