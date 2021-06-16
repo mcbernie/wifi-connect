@@ -125,7 +125,7 @@ impl NetworkCommandHandler {
 
         warn!("second start....");
         thread::sleep(Duration::from_millis(250));
-        hostapd = start_hostapd(config)?;
+        let hostapd = start_hostapd(config)?;
 
 
         let config = config.clone();
