@@ -116,8 +116,8 @@ impl NetworkCommandHandler {
         warn!("spawn_timeouter");
         Self::spawn_activity_timeout(config, network_tx.clone());
 
-        
-        hostapd = start_hostapd(config)?;
+        thread::sleep(Duration::from_millis(250));
+        let hostapd = start_hostapd(config)?;
 
 
         let config = config.clone();
