@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use errors::*;
 use config::Config;
-
+/*
 
 pub fn create_phy_if(config: &Config) {
     remove_phy_if(config);
@@ -74,3 +74,5 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
 
     return Ok(finished_path)
 }
+
+*/

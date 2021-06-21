@@ -3,8 +3,8 @@ use std::process::{Child, Command};
 use errors::*;
 use config::Config;
 
-pub fn start_dnsmasq(config: &Config) -> Result<Child> {
-    let args = [
+/*pub fn start_dnsmasq(config: &Config) -> Result<Child> {
+    /*let args = [
         &format!("--address=/portal.micast.local/{}", config.gateway),
         &format!("--dhcp-range={}", config.dhcp_range),
         &format!("--dhcp-option=option:router,{}", config.gateway),
@@ -20,5 +20,5 @@ pub fn start_dnsmasq(config: &Config) -> Result<Child> {
     Command::new("dnsmasq")
         .args(&args)
         .spawn()
-        .chain_err(|| ErrorKind::Dnsmasq)
-}
+        .chain_err(|| ErrorKind::Dnsmasq)*/
+}*/

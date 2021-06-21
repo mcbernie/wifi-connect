@@ -13,8 +13,8 @@ use errors::*;
 use exit::{exit, trap_exit_signals, ExitResult};
 use config::Config;
 
-use dnsmasq::start_dnsmasq;
-use hostapd::{start_hostapd, create_phy_if, remove_phy_if};
+//use dnsmasq::start_dnsmasq;
+//use hostapd::{start_hostapd, create_phy_if, remove_phy_if};
 
 use server::start_server;
 use std::str::{FromStr,from_utf8};
@@ -68,8 +68,8 @@ struct NetworkCommandHandler {
     ethernet_device: Option<Device>,
     access_points: Vec<AccessPoint>,
     config: Config,
-    dnsmasq: process::Child,
-    hostapd: process::Child,
+    //dnsmasq: process::Child,
+    //hostapd: process::Child,
     server_tx: Sender<NetworkCommandResponse>,
     network_rx: Receiver<NetworkCommand>,
     activated: bool,
@@ -96,17 +96,6 @@ impl NetworkCommandHandler {
             }
         };
 
-        warn!("startup process");
-        create_phy_if(config);
-
-
-        thread::sleep(Duration::from_millis(250));
-        let dnsmasq = start_dnsmasq(config)?;
-
-        
-        
-
-        thread::sleep(Duration::from_millis(250));
 
         let (server_tx, server_rx) = channel();
 
@@ -115,10 +104,6 @@ impl NetworkCommandHandler {
 
         warn!("spawn_timeouter");
         Self::spawn_activity_timeout(config, network_tx.clone());
-
-        thread::sleep(Duration::from_millis(250));
-        let hostapd = start_hostapd(config)?;
-
 
         let config = config.clone();
         let activated = false;
@@ -131,8 +116,6 @@ impl NetworkCommandHandler {
             ethernet_device,
             access_points,
             config,
-            dnsmasq,
-            hostapd,
             server_tx,
             network_rx,
             activated,
@@ -281,11 +264,11 @@ impl NetworkCommandHandler {
     fn stop(&mut self, exit_tx: &Sender<ExitResult>, result: ExitResult) {
         use std::process::Command;
         warn!("stop");
-        let _ = self.dnsmasq.kill();
-        let _ = self.hostapd.kill();
+        //let _ = self.dnsmasq.kill();
+        //let _ = self.hostapd.kill();
 
 
-        remove_phy_if(&self.config);
+        //remove_phy_if(&self.config);
 
         /*if let Some(ref connection) = self.portal_connection {
             let _ = stop_portal_impl(connection, &self.config);
