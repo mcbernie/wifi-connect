@@ -14,7 +14,7 @@ use exit::{exit, trap_exit_signals, ExitResult};
 use config::Config;
 
 use dnsmasq::start_dnsmasq;
-use hostapd::{stop_hostapd, start_hostapd, create_phy_if, remove_phy_if};
+use hostapd::{start_hostapd, create_phy_if, remove_phy_if};
 
 use server::start_server;
 use std::str::{FromStr,from_utf8};
@@ -69,7 +69,7 @@ struct NetworkCommandHandler {
     access_points: Vec<AccessPoint>,
     config: Config,
     dnsmasq: process::Child,
-    //hostapd: process::Child,
+    hostapd: process::Child,
     server_tx: Sender<NetworkCommandResponse>,
     network_rx: Receiver<NetworkCommand>,
     activated: bool,
@@ -117,7 +117,7 @@ impl NetworkCommandHandler {
         Self::spawn_activity_timeout(config, network_tx.clone());
 
         thread::sleep(Duration::from_millis(250));
-        start_hostapd(config);
+        let hostapd = start_hostapd(config)?;
 
 
         let config = config.clone();
@@ -132,6 +132,7 @@ impl NetworkCommandHandler {
             access_points,
             config,
             dnsmasq,
+            hostapd,
             server_tx,
             network_rx,
             activated,
@@ -281,9 +282,8 @@ impl NetworkCommandHandler {
         use std::process::Command;
         warn!("stop");
         let _ = self.dnsmasq.kill();
-        //let _ = self.hostapd.kill();
+        let _ = self.hostapd.kill();
 
-        stop_hostapd();
 
         remove_phy_if(&self.config);
 

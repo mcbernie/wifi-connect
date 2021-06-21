@@ -28,44 +28,27 @@ pub fn remove_phy_if(config: &Config) {
     let _cmd = Command::new("iw").arg("dev").arg(&format!("{}", config.ap_interface)).arg("del").output();
 }
 
-pub fn start_hostapd(config: &Config) {
+pub fn start_hostapd(config: &Config) -> Result<Child> {
     // create a config in tmp
 
     warn!("run hostapd");
-    let _config_path = write_config(&config.ap_interface, &config.ssid).unwrap();
-    /*Command::new("sh")
+    let config_path = write_config(&config.ap_interface, &config.ssid).unwrap();
+    Command::new("sh")
         .arg("-c")
-        .arg(format!("\"/usr/sbin/hostapd {}\"", config_path))
+        .arg(format!("hostapd {}", config_path))
         .spawn()
-        .chain_err(|| ErrorKind::Hostapd)*/
-
-
-    let _cmd = Command::new("systemctl")
-        .arg("restart")
-        .arg("hostapd")
-        .output();
+        .chain_err(|| ErrorKind::Hostapd)
 }
 
-
-pub fn stop_hostapd()  {
-    warn!("stop hostapd");
-
-    let _cmd = Command::new("systemctl")
-        .arg("stop")
-        .arg("hostapd")
-        .output();
-}
 
 
 
 fn write_config(interface: &str, ssid: &str) -> Result<String> {
 
-    /*let mut dir = env::temp_dir();
+    let mut dir = env::temp_dir();
     dir.push("hostapd.config");
 
-    let finished_path = dir.display().to_string();*/
-
-    let finished_path = "/etc/hostapd.conf";
+    let finished_path = dir.display().to_string();
 
     let config_params = [
         &format!("interface={}",interface),
@@ -80,7 +63,7 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
 
     ];
 
-    let mut file = File::create(finished_path).expect("failed to open file");
+    let mut file = File::create(dir).expect("failed to open file");
 
     for row in &config_params{                                                                                                                                                                  
         //file.write_all((*row)).expect("failed to write file");       
@@ -88,5 +71,5 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
     }     
     
 
-    return Ok(finished_path.to_string())
+    return Ok(finished_path)
 }
