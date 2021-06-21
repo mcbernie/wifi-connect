@@ -14,7 +14,7 @@ use exit::{exit, trap_exit_signals, ExitResult};
 use config::Config;
 
 use dnsmasq::start_dnsmasq;
-use hostapd::{start_hostapd, create_phy_if, remove_phy_if};
+use hostapd::{stop_hostapd, start_hostapd, create_phy_if, remove_phy_if};
 
 use server::start_server;
 use std::str::{FromStr,from_utf8};
@@ -281,8 +281,9 @@ impl NetworkCommandHandler {
         use std::process::Command;
         warn!("stop");
         let _ = self.dnsmasq.kill();
-        let _ = self.hostapd.kill();
+        //let _ = self.hostapd.kill();
 
+        stop_hostapd();
 
         remove_phy_if(&self.config);
 
