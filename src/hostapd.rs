@@ -36,6 +36,7 @@ pub fn start_hostapd(config: &Config) -> Result<Child> {
     Command::new("su")
         .arg("-c")
         .arg(format!("hostapd {}", config_path))
+        .arg("root")
         .spawn()
         .chain_err(|| ErrorKind::Hostapd)
 }
