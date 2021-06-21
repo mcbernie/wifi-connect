@@ -33,7 +33,7 @@ pub fn start_hostapd(config: &Config) -> Result<Child> {
 
     warn!("run hostapd");
     let config_path = write_config(&config.ap_interface, &config.ssid).unwrap();
-    Command::new("hostapd")
+    Command::new("sh -c hostapd")
         .arg(config_path)
         .spawn()
         .chain_err(|| ErrorKind::Hostapd)
