@@ -40,20 +40,20 @@ pub fn start_hostapd(config: &Config) {
         .chain_err(|| ErrorKind::Hostapd)*/
 
 
-    Command::new("systemctl")
+    let _cmd = Command::new("systemctl")
         .arg("restart")
         .arg("hostapd")
-        .output()
+        .output();
 }
 
 
 pub fn stop_hostapd()  {
     warn!("stop hostapd");
 
-    Command::new("systemctl")
+    let _cmd = Command::new("systemctl")
         .arg("stop")
         .arg("hostapd")
-        .output()
+        .output();
 }
 
 
