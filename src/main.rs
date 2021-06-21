@@ -46,6 +46,8 @@ use network::{init_networking, process_network_commands};
 use exit::block_exit_signals;
 use privileges::require_root;
 
+use hostapd::{stop_hostapd};
+
 fn main() {
     if let Err(ref e) = run() {
         let stderr = &mut ::std::io::stderr();
@@ -56,6 +58,9 @@ fn main() {
         for inner in e.iter().skip(1) {
             writeln!(stderr, "  caused by: {}", inner).expect(errmsg);
         }
+
+
+        stop_hostapd();
 
         process::exit(exit_code(e));
     }
@@ -86,6 +91,8 @@ fn run() -> Result<()> {
             return Err(e.into());
         },
     }
+
+    stop_hostapd()
 
     Ok(())
 }
