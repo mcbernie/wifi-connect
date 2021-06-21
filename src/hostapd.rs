@@ -65,7 +65,7 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
 
     let finished_path = dir.display().to_string();*/
 
-    let finished_path = "/etc/hostapd.conf".to_string();
+    let finished_path = "/etc/hostapd.conf";
 
     let config_params = [
         &format!("interface={}",interface),
@@ -88,5 +88,5 @@ fn write_config(interface: &str, ssid: &str) -> Result<String> {
     }     
     
 
-    return Ok(finished_path)
+    return Ok(finished_path.to_string())
 }
