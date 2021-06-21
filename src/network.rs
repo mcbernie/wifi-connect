@@ -69,7 +69,7 @@ struct NetworkCommandHandler {
     access_points: Vec<AccessPoint>,
     config: Config,
     dnsmasq: process::Child,
-    hostapd: process::Child,
+    //hostapd: process::Child,
     server_tx: Sender<NetworkCommandResponse>,
     network_rx: Receiver<NetworkCommand>,
     activated: bool,
@@ -117,7 +117,7 @@ impl NetworkCommandHandler {
         Self::spawn_activity_timeout(config, network_tx.clone());
 
         thread::sleep(Duration::from_millis(250));
-        let hostapd = start_hostapd(config)?;
+        start_hostapd(config);
 
 
         let config = config.clone();
@@ -132,7 +132,6 @@ impl NetworkCommandHandler {
             access_points,
             config,
             dnsmasq,
-            hostapd,
             server_tx,
             network_rx,
             activated,
