@@ -92,7 +92,7 @@ fn run() -> Result<()> {
         },
     }
 
-    stop_hostapd()
+    stop_hostapd();
 
     Ok(())
 }
