@@ -208,10 +208,10 @@ impl NetworkCommandHandler {
                 },
                 NetworkCommand::Timeout => {
                     warn!("receive timeout");
-                    if !self.activated {
+                    //if !self.activated {
                         info!("Timeout reached. Exiting...");
                         return Ok(());
-                    }
+                    //}
                 },
                 NetworkCommand::Exit => {
                     warn!("recevie exit");
