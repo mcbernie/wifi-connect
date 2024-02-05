@@ -215,7 +215,7 @@ fn start(req: &mut Request) -> IronResult<Response> {
         Ok(mut file) => {
             info!("create configmode file and reboot...");
             file.write_all(b"ENABLE CONFIG MODE");
-            let _output = Command::new("reboot").arg("now").output();
+            //let _output = Command::new("reboot").arg("now").output();
             Ok(Response::with(status::Ok))
         },
         Err(e) => {

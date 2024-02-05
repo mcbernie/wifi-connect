@@ -1,5 +1,4 @@
 use std::thread;
-use std::process;
 use std::time::Duration;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::error::Error;
@@ -68,8 +67,6 @@ struct NetworkCommandHandler {
     ethernet_device: Option<Device>,
     access_points: Vec<AccessPoint>,
     config: Config,
-    //dnsmasq: process::Child,
-    //hostapd: process::Child,
     server_tx: Sender<NetworkCommandResponse>,
     network_rx: Receiver<NetworkCommand>,
     activated: bool,
@@ -133,7 +130,10 @@ impl NetworkCommandHandler {
         let exit_tx_server = exit_tx.clone();
 
         // determine if in "CONFIGMODE.tmp" exists in TMP
-        let ui_directory = match std::path::Path::new("/var/CONFIGMODE").exists() {
+        // disable configmode!
+
+        let ui_directory = config.ui_directory.clone();
+        /*let ui_directory = match std::path::Path::new("/var/CONFIGMODE").exists() {
             true => {
                 // remove 
                 let _  = fs::remove_file("/var/CONFIGMODE");
@@ -143,7 +143,7 @@ impl NetworkCommandHandler {
             false => {
                 config.pre_ui_directory.clone()
             }
-        };
+        };*/
         
 
         thread::spawn(move || {
@@ -856,9 +856,11 @@ fn get_access_points_impl(device: &Device) -> Result<Vec<AccessPoint>> {
     // of access points to become available
     while retries < retries_allowed {
         let wifi_device = device.as_wifi_device().unwrap();
+        // is required to refresh wifi list
+        let _ = wifi_device.request_scan();
         let mut access_points = wifi_device.get_access_points()?;
 
-        access_points.retain(|ap| ap.ssid().as_str().is_ok());
+        access_points.retain(|ap| ap.ssid().as_str().is_ok() && ap.ssid().as_str().unwrap() != "");
 
         if !access_points.is_empty() {
             info!(
