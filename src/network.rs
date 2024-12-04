@@ -234,9 +234,9 @@ impl NetworkCommandHandler {
                     return Ok(());
                 },
                 NetworkCommand::EthDhcp => {
-                    warn!("ethdhcp received");
                     if self.connect_dhcp()? {
-                        return Ok(());
+                        warn!("ethdhcp received");
+                        //return Ok(());
                     }
                 },
                 NetworkCommand::EthConnect {
