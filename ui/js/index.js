@@ -32,42 +32,47 @@ $(function(){
 	$('#ssid-select').change(showHideEnterpriseSettings);
 	$('#network-select').change(showSettingsFields);
 
-	$.get("/networks", function(data){
-		
-			config = JSON.parse(data);
+	async function fetchNetworks() {
 
-			if ( config.ssids.length > 0) {
-
+		try {
+			// jQuery $.get in ein Promise umwandeln
+			const data = await new Promise((resolve, reject) => {
+				$.get("/networks", resolve).fail(reject);
+			});
+	
+			const config = JSON.parse(data);
+	
+			if (config.ssids.length > 0) {
 				$('#network-select').append(
 					$('<option>')
-							.text("WLAN")
-							.attr('value', "wlan")
+						.text("WLAN")
+						.attr('value', "wlan")
 				);
 				$('#wlan').show();
-			} {
+			} else {
 				$('#wlan').hide();
 			}
-
-			if (config.ethernet && config.ethernet != "None") {
+	
+			if (config.ethernet && config.ethernet !== "None") {
 				$('#network-select').append(
 					$('<option>')
-							.text(" Kabelgebundenes Netzwerk - DHCP")
-							.attr('value', "ethernet-dhcp")
+						.text("Kabelgebundenes Netzwerk - DHCP")
+						.attr('value', "ethernet-dhcp")
 				);
-
+	
 				$('#network-select').append(
 					$('<option>')
-							.text(" Kabelgebundenes Netzwerk - Manuell")
-							.attr('value', "ethernet")
+						.text("Kabelgebundenes Netzwerk - Manuell")
+						.attr('value', "ethernet")
 				);
-
-				if (config.ethernet.Static && config.ethernet.Static .length > 0) {
+	
+				if (config.ethernet.Static && config.ethernet.Static.length > 0) {
 					$('#eth_ipaddress').val(config.ethernet.Static[0]);
 					$('#eth_subnet').val(config.ethernet.Static[1]);
 					$('#eth_gateway').val(config.ethernet.Static[2]);
 					$('#eth_dns').val(config.ethernet.Static[3]);
 				}
-
+	
 				if (config.ethernet.Dhcp && config.ethernet.Dhcp.length > 0) {
 					$('#eth_ipaddress').val(config.ethernet.Dhcp[0]);
 					$('#eth_subnet').val(config.ethernet.Dhcp[1]);
@@ -75,14 +80,14 @@ $(function(){
 					$('#eth_dns').val(config.ethernet.Dhcp[3]);
 				}
 			}
-
+	
 			jQuery.proxy(showSettingsFields, $('#network-select'))();
-
-			if(config.ssids.length === 0){
+	
+			if (config.ssids.length === 0) {
 				$('.before-submit').hide();
 				$('#no-networks-message').removeClass('hidden');
 			} else {
-				$.each(config.ssids, function(i, val){
+				$.each(config.ssids, function (i, val) {
 					$('#ssid-select').append(
 						$('<option>')
 							.text(val.ssid)
@@ -90,12 +95,15 @@ $(function(){
 							.attr('data-security', val.security)
 					);
 				});
-
+	
 				jQuery.proxy(showHideEnterpriseSettings, $('#ssid-select'))();
 			}
-			
-	});
+		} catch (error) {
+			console.error("Fehler beim Abrufen der Netzwerke:", error);
+		}
+	}
 
+	fetchNetworks();
 	/*
 	struct ConnectionResponseState {
 		status: String,
@@ -103,20 +111,31 @@ $(function(){
 		error:bool,
 	}
 	*/
+	$('#retry-button').click(function(ev) {
+		ev.preventDefault();
+		$('.before-submit').show();
+		$('#submit-message').addClass('hidden');
+		$('#connection_status').text('Bitte warten...');
+		$('#connection_status_sub').text("");
+		$('#status_icon').css('display', 'none');
+		$('#status_ok_icon').css('display', 'none');
+		$('#status_error_icon').css('display', 'none');
+		$('#retry-button').css("display", "none");
+	});
 
 	$('#connect-form').submit(function(ev){
 		ev.preventDefault();
 
+		$('.before-submit').hide();
+		$('#retry-button').css("display", "none");
+		$('#submit-message').removeClass('hidden');
 		$('#connection_status').text('Bitte warten...');
 		$('#connection_status_sub').text("");
 		$('#status_icon').css('display', 'block');
 		$('#status_ok_icon').css('display', 'none');
 		$('#status_error_icon').css('display', 'none');
 
-		$.post('/connect', $('#connect-form').serialize(), function(data){
-			$('.before-submit').hide();
-			$('#submit-message').removeClass('hidden');
-		});
+		$.post('/connect', $('#connect-form').serialize(), function(data){});
 
 		global_timer = setInterval(function() {
 			$.get('/connect_state', function(response) {
@@ -134,6 +153,7 @@ $(function(){
 				} else {
 					if (connection_response.error === true) {
 						clearInterval(global_timer);
+						$('#retry-button').css("display", "block");
 						$('#status_icon').css('display', 'none');
 						$('#status_ok_icon').css('display', 'none');
 						$('#status_error_icon').css('display', 'block');

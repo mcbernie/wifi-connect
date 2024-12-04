@@ -120,12 +120,12 @@
 					</form>
 				</div>
 			</div>
-			<div class="row hidden" id='submit-message'>
+			<div class="row " id='submit-message'>
 				<div class="col-lg-8 col-lg-offset-2">
 					<h3>Übernehme Einstellungen...</h3>
 					<p>Das Micast-System wird jetzt eine Verbindung zum Server aufbauen. Sollte die Verbindung nicht möglich sein, wird der Accesspoint automatisch wieder Online gehen und du kannst die Einstellungen korrigieren.</p>
 
-					<div class="spinner" style="text-align: center;">
+					<div class="spinner" style="display:flex; justify-content: center;">
 						<svg style="display:none" id="status_icon" width="50px" height="50px" viewBox="0 0 50 50" >
 							<circle cx="25" cy="25" r="20" fill="none" stroke-width="5" stroke="#007bff" stroke-linecap="round" stroke-dasharray="31.415, 31.415" transform="rotate(0 25 25)">
 								<animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 25 25;360 25 25"></animateTransform>
@@ -141,10 +141,15 @@
 
 
 
-					<div class="spinner" style="text-align: center; flex:1" >
+					<div class="spinner" style="display:flex; justify-content: center;">
 						<div id="connection_status" style="font-size: 1.5em;" >Bitte warten...</div>
 						<div id="connection_status_sub" style="font-size: 0.9em; color: #555;"></div>
 					</div>
+
+					<div class="spinner" style="display:flex; justify-content: center;">
+						<button type='button' class='btn btn-success' id='retry-button' style="display:block">Erneut versuchen</button>
+					</div>
+
 
 				</div>
 			</div>
