@@ -1,7 +1,6 @@
 use std::thread;
 use itertools::Itertools;
 use log::{debug, error, info, warn};
-use serde::de;
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -69,8 +68,6 @@ struct NetworkCommandHandler {
     ethernet_device: Option<Device>,
     access_points: Vec<AccessPoint>,
     config: Config,
-    //dnsmasq: process::Child,
-    //hostapd: process::Child,
     server_tx: Sender<NetworkCommandResponse>,
     network_rx: Receiver<NetworkCommand>,
     activated: bool,
@@ -134,7 +131,10 @@ impl NetworkCommandHandler {
         let exit_tx_server = exit_tx.clone();
 
         // determine if in "CONFIGMODE.tmp" exists in TMP
-        let ui_directory = match std::path::Path::new("/var/CONFIGMODE").exists() {
+        // disable configmode!
+
+        let ui_directory = config.ui_directory.clone();
+        /*let ui_directory = match std::path::Path::new("/var/CONFIGMODE").exists() {
             true => {
                 // remove 
                 let _  = fs::remove_file("/var/CONFIGMODE");
@@ -144,7 +144,7 @@ impl NetworkCommandHandler {
             false => {
                 config.pre_ui_directory.clone()
             }
-        };
+        };*/
         
 
         thread::spawn(move || {
@@ -209,10 +209,10 @@ impl NetworkCommandHandler {
                 },
                 NetworkCommand::Timeout => {
                     warn!("receive timeout");
-                    if !self.activated {
+                    //if !self.activated {
                         info!("Timeout reached. Exiting...");
                         return Ok(());
-                    }
+                    //}
                 },
                 NetworkCommand::Exit => {
                     warn!("recevie exit");
@@ -860,9 +860,10 @@ fn get_access_points_impl(device: &Device) -> Result<Vec<AccessPoint>> {
     // of access points to become available
     while retries < retries_allowed {
         let wifi_device = device.as_wifi_device().unwrap();
-        let mut access_points = wifi_device.get_access_points().map_err(|e| anyhow!("no accesspoints {:?}", e))?;
+        let mut access_points = wifi_device.get_access_points().map_err(|e| anyhow!("get access points failed: ({:?})", e))?;
 
-        access_points.retain(|ap| ap.ssid().as_str().is_ok());
+        wifi_device.request_scan().map_err(|e| anyhow!("request scan failed {:?}", e))?;
+        access_points.retain(|ap| ap.ssid().as_str().is_ok() && ap.ssid().as_str().unwrap() != "");
 
         if !access_points.is_empty() {
             let remove_duplicates: Vec<_> = access_points.into_iter().unique_by(|ap| ap.ssid.to_owned()).collect();

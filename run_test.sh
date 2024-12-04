@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
-trap "kill 0; iw dev ap del" EXIT
+
+#trap "kill 0; iw dev ap del" EXIT
 
 AR=$1
 TIMEOUT=${AR:=300}
@@ -19,17 +20,33 @@ echo "stop dnsmasq and hostapd"
 /bin/systemctl stop dnsmasq
 /bin/systemctl stop hostapd
 
+kill $(pidof hostapd)
+kill $(pidof dnsmasq)
+
 echo "create interface and assign ip:"
 iw phy phy0 interface add ap type __ap
-sleep 1
+sleep 2
 
-echo "remove ip"
-ip addr del $GATEWAY_IP/24 dev ap
+echo "set mac address for ap"
+# Der part ist nur für die Ubuntu Test Machine
+ip link set dev ap address a4:b2:b0:bc:ca:05
 sleep 1
+systemctl restart NetworkManager
+# Ende 
 
+# echo "remove ip"
+# ip addr del $GATEWAY_IP/24 dev ap
+# sleep 1
+
+sleep 1
 echo "add ip"
 ip addr add $GATEWAY_IP/24 dev ap
-sleep 1
+
+# Wichtig auch nur fuer das Test-System
+echo "stoppe systemd-resolved, da dnsmasq den Port 53 brauch"
+systemctl stop systemd-resolved
+
+ss -lptn 'sport = :53'
 
 echo "start dnsmasq"
 dnsmasq \
@@ -63,10 +80,18 @@ EOT
 
 hostapd /tmp/hostapd.config &
 
-echo "run captive portal"
-./target/debug/wifi-connect -u ./ui -t /ui-configmode -s $HOSTNAME -a $TIMEOUT -g $GATEWAY_IP -d $DHCP_RANGE -w ap
+sleep 1
+echo "now you can run captive portal"
+
+ip addr add $GATEWAY_IP/24 dev ap
+#export RUST_LOG=debug 
+#./target/debug/wifi-connect -u ./ui -t ./ui-configmode -s $HOSTNAME -a $TIMEOUT -g $GATEWAY_IP -w ap
+
+echo "wait until CTRL+c"
+read -r -d '' _ </dev/tty
 
 echo "remove interface and ip assignment"
-ip addr del $GATEWAY_IP/24 dev ap
+#ip addr del $GATEWAY_IP/24 dev ap
 iw dev ap del
+
 

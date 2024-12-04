@@ -33,7 +33,7 @@ fn run() -> Result<()> {
 
     let config = get_config();
 
-    require_root()?;
+    //require_root()?;
 
     init_networking(&config)?;
 

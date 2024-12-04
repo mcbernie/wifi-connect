@@ -22,9 +22,9 @@ pub struct Config {
     pub eth_inferface: Option<String>,
     pub ap_interface: String,
     pub ssid: String,
-    pub passphrase: Option<String>,
+    //pub passphrase: Option<String>,
     pub gateway: Ipv4Addr,
-    pub dhcp_range: String,
+    //pub dhcp_range: String,
     pub listening_port: u16,
     pub activity_timeout: u64,
     pub ui_directory: PathBuf,
@@ -67,13 +67,13 @@ pub fn get_config() -> Config {
                     DEFAULT_SSID
                 )),
         )
-        .arg(
-            Arg::new("portal-passphrase")
-                .short('p')
-                .long("portal-passphrase")
-                .value_name("passphrase")
-                .help("WPA2 Passphrase of the captive portal WiFi network (default: none)"),
-        )
+        //.arg(
+        //    Arg::new("portal-passphrase")
+        //        .short('p')
+        //        .long("portal-passphrase")
+        //        .value_name("passphrase")
+        //        .help("WPA2 Passphrase of the captive portal WiFi network (default: none)"),
+        //)
         .arg(
             Arg::new("portal-gateway")
                 .short('g')
@@ -84,16 +84,16 @@ pub fn get_config() -> Config {
                     DEFAULT_GATEWAY
                 )),
         )
-        .arg(
-            Arg::new("portal-dhcp-range")
-                .short('d')
-                .long("portal-dhcp-range")
-                .value_name("dhcp_range")
-                .help(&format!(
-                    "DHCP range of the WiFi network (default: {})",
-                    DEFAULT_DHCP_RANGE
-                )),
-        )
+        //.arg(
+        //    Arg::new("portal-dhcp-range")
+        //        .short('d')
+        //        .long("portal-dhcp-range")
+        //        .value_name("dhcp_range")
+        //        .help(&format!(
+        //            "DHCP range of the WiFi network (default: {})",
+        //            DEFAULT_DHCP_RANGE
+        //        )),
+        //)
         .arg(
             Arg::new("portal-listening-port")
                 .short('o')
@@ -153,20 +153,20 @@ pub fn get_config() -> Config {
         String::from,
     );
 
-    let passphrase: Option<String> = matches.get_one::<String>("portal-passphrase").map_or_else(
-        || env::var("PORTAL_PASSPHRASE").ok(),
-        |v| Some(v.to_string()),
-    );
+    //let passphrase: Option<String> = matches.get_one::<String>("portal-passphrase").map_or_else(
+    //    || env::var("PORTAL_PASSPHRASE").ok(),
+    //    |v| Some(v.to_string()),
+    //);
 
     let gateway = Ipv4Addr::from_str(&matches.get_one::<String>("portal-gateway").map_or_else(
         || env::var("PORTAL_GATEWAY").unwrap_or_else(|_| DEFAULT_GATEWAY.to_string()),
         String::from,
     )).expect("Cannot parse gateway address");
 
-    let dhcp_range = matches.get_one::<String>("portal-dhcp-range").map_or_else(
-        || env::var("PORTAL_DHCP_RANGE").unwrap_or_else(|_| DEFAULT_DHCP_RANGE.to_string()),
-        String::from,
-    );
+    //let dhcp_range = matches.get_one::<String>("portal-dhcp-range").map_or_else(
+    //    || env::var("PORTAL_DHCP_RANGE").unwrap_or_else(|_| DEFAULT_DHCP_RANGE.to_string()),
+    //    String::from,
+    //);
 
     let listening_port = matches
         .get_one::<String>("portal-listening-port")
@@ -194,9 +194,9 @@ pub fn get_config() -> Config {
         eth_inferface: eth_inferface,
         ap_interface: ap_interface,
         ssid: ssid,
-        passphrase: passphrase,
+        //passphrase: passphrase,
         gateway: gateway,
-        dhcp_range: dhcp_range,
+        //dhcp_range: dhcp_range,
         listening_port: listening_port,
         activity_timeout: activity_timeout,
         ui_directory: ui_directory,
