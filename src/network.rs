@@ -248,7 +248,7 @@ impl NetworkCommandHandler {
                     warn!("ethconnect received");
                     if self.connect_static(&ip, &sn, &gw, &dns)? {
                         warn!("connected");
-                        return Ok(());
+                        //return Ok(());
                     }
                 },
                 NetworkCommand::Connect {
@@ -258,7 +258,8 @@ impl NetworkCommandHandler {
                 } => {
                     warn!("connect");
                     if self.connect(&ssid, &identity, &passphrase)? {
-                        return Ok(());
+                        warn!("connected to wlan...");
+                        //return Ok(());
                     }
                 },
             }
