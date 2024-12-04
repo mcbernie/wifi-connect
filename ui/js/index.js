@@ -1,5 +1,6 @@
 $(function(){
 	var networks = undefined;
+	var global_timer = undefined;
 
 	function showSettingsFields() {
 		var field_to_show = $(this).find(':selected').attr('value');
@@ -95,11 +96,54 @@ $(function(){
 			
 	});
 
+	/*
+	struct ConnectionResponseState {
+		status: String,
+		connected: bool,
+		error:bool,
+	}
+	*/
+
 	$('#connect-form').submit(function(ev){
+		ev.preventDefault();
+
+		$('#connection_status').text('Bitte warten...');
+		$('#connection_status_sub').text("");
+		$('#status_icon').css('display', 'block');
+		$('#status_ok_icon').css('display', 'none');
+		$('#status_error_icon').css('display', 'none');
+
 		$.post('/connect', $('#connect-form').serialize(), function(data){
 			$('.before-submit').hide();
 			$('#submit-message').removeClass('hidden');
 		});
-		ev.preventDefault();
+
+		global_timer = setInterval(function() {
+			$.get('/connect_state', function(response) {
+
+				var connection_response = JSON.parse(response);
+				if (connection_response.connected === true) {
+
+					clearInterval(global_timer);
+					$('#status_icon').css('display', 'none');
+					$('#status_ok_icon').css('display', 'block');
+					$('#status_error_icon').css('display', 'none');
+
+					$('#connection_status').text('Erfolgreich verbunden');
+					$('#connection_status_sub').text(connection_response.status);
+				} else {
+					if (connection_response.error === true) {
+						clearInterval(global_timer);
+						$('#status_icon').css('display', 'none');
+						$('#status_ok_icon').css('display', 'none');
+						$('#status_error_icon').css('display', 'block');
+
+						$('#connection_status').text('Eine Verbindung konnte nicht hergestellt werden');
+						$('#connection_status_sub').text(connection_response.status);
+					}
+				}
+			});
+		}, 200);
+	
 	});
 });

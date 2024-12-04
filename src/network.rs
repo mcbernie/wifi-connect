@@ -58,6 +58,15 @@ pub struct NetworkConfiguration {
     ethernet: EthernetTyp,
 }
 
+pub enum ConnectionStateResponse {
+    Connected,
+    Connecting,
+    WrongPassword,
+    UnkownID,
+    Unkown(String),
+    NoInternet
+}
+
 pub enum NetworkCommandResponse {
     Network(NetworkConfiguration),
 }
@@ -69,6 +78,7 @@ struct NetworkCommandHandler {
     access_points: Vec<AccessPoint>,
     config: Config,
     server_tx: Sender<NetworkCommandResponse>,
+    state_tx: Sender<ConnectionStateResponse>,
     network_rx: Receiver<NetworkCommand>,
     activated: bool,
 }
@@ -96,9 +106,10 @@ impl NetworkCommandHandler {
 
 
         let (server_tx, server_rx) = channel();
+        let (state_tx, state_rx) = channel();
 
         warn!("spawn server");
-        Self::spawn_server(config, exit_tx, server_rx, network_tx.clone());
+        Self::spawn_server(config, exit_tx, server_rx, state_rx, network_tx.clone());
 
         warn!("spawn_timeouter");
         Self::spawn_activity_timeout(config, network_tx.clone());
@@ -117,6 +128,7 @@ impl NetworkCommandHandler {
             server_tx,
             network_rx,
             activated,
+            state_tx,
         })
     }
 
@@ -124,6 +136,7 @@ impl NetworkCommandHandler {
         config: &Config,
         exit_tx: &Sender<ExitResult>,
         server_rx: Receiver<NetworkCommandResponse>,
+        state_rx: Receiver<ConnectionStateResponse>,
         network_tx: Sender<NetworkCommand>,
     ) {
         let gateway = config.gateway;
@@ -152,6 +165,7 @@ impl NetworkCommandHandler {
                 gateway,
                 listening_port,
                 server_rx,
+                state_rx,
                 network_tx,
                 exit_tx_server,
                 &ui_directory,
@@ -403,8 +417,8 @@ impl NetworkCommandHandler {
         };
 
         let nc = NetworkConfiguration{
-            ssids: ssids,
-            ethernet: ethernet,
+            ssids,
+            ethernet,
         };
 
         
@@ -587,7 +601,7 @@ impl NetworkCommandHandler {
         if let Some(access_point) = find_access_point(&self.access_points, ssid) {
             let wifi_device = self.device.as_wifi_device().unwrap();
 
-            info!("Connecting to access point '{}'...", ssid);
+            info!("Connecting to access point '{}'... wifi_device? {}", ssid, self.device.interface());
 
             let credentials = init_access_point_credentials(access_point, identity, passphrase);
 
@@ -598,11 +612,16 @@ impl NetworkCommandHandler {
                             Ok(has_connectivity) => {
                                 if has_connectivity {
                                     info!("Internet connectivity established");
+                                    self.state_tx.send(ConnectionStateResponse::Connected)?;
                                 } else {
                                     warn!("Cannot establish Internet connectivity");
+                                    self.state_tx.send(ConnectionStateResponse::NoInternet)?;
                                 }
                             },
-                            Err(err) => error!("Getting Internet connectivity failed: {}", err),
+                            Err(err) => {
+                                self.state_tx.send(ConnectionStateResponse::Unkown(format!("NoConnectitivy: {:?}", state)))?;
+                                error!("Getting Internet connectivity failed: {}", err)
+                            },
                         }
 
                         return Ok(true);
@@ -611,6 +630,9 @@ impl NetworkCommandHandler {
                     if let Err(err) = connection.delete() {
                         error!("Deleting connection object failed: {}", err)
                     }
+                    // determine if ethernet is aviable
+                    self.state_tx
+                        .send(ConnectionStateResponse::Unkown(format!("state: {:?}", state)))?;
 
                     warn!(
                         "Connection to access point not activated '{}': {:?}",
@@ -618,6 +640,8 @@ impl NetworkCommandHandler {
                     );
                 },
                 Err(e) => {
+                    self.state_tx
+                        .send(ConnectionStateResponse::Unkown(format!("Fehlgeschlagen: {:?}", e)))?;
                     warn!("Error connecting to access point '{}': {}", ssid, e);
                 },
             }

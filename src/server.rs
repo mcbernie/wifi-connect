@@ -1,4 +1,6 @@
 use anyhow::{anyhow, Error};
+use serde::Serialize;
+use serde_derive::Serialize;
 use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, Sender};
 use std::fmt;
@@ -18,7 +20,7 @@ use persistent::Write;
 use params::{FromValue, Params};
 
 use log::{debug, error, info};
-use crate::network::{NetworkCommand, NetworkCommandResponse};
+use crate::network::{ConnectionStateResponse, NetworkCommand, NetworkCommandResponse};
 use crate::exit::{exit, ExitResult};
 
 struct RequestSharedState {
@@ -26,6 +28,7 @@ struct RequestSharedState {
     server_rx: Receiver<NetworkCommandResponse>,
     network_tx: Sender<NetworkCommand>,
     exit_tx: Sender<ExitResult>,
+    state_rx: Receiver<ConnectionStateResponse>,
 }
 
 impl typemap::Key for RequestSharedState {
@@ -127,6 +130,7 @@ pub fn start_server(
     gateway: Ipv4Addr,
     listening_port: u16,
     server_rx: Receiver<NetworkCommandResponse>,
+    state_rx: Receiver<ConnectionStateResponse>,
     network_tx: Sender<NetworkCommand>,
     exit_tx: Sender<ExitResult>,
     ui_directory: &PathBuf,
@@ -134,16 +138,18 @@ pub fn start_server(
     let exit_tx_clone = exit_tx.clone();
     let gateway_clone = gateway;
     let request_state = RequestSharedState {
-        gateway: gateway,
-        server_rx: server_rx,
-        network_tx: network_tx,
-        exit_tx: exit_tx,
+        gateway,
+        server_rx,
+        network_tx,
+        exit_tx,
+        state_rx,
     };
 
     let mut router = Router::new();
     router.get("/", Static::new(ui_directory), "index");
     router.get("/networks", networks, "networks");
     router.post("/connect", connect, "connect");
+    router.post("/connect_state", connect_status, "connect_state");
     router.post("/start", start, "start");
 
     let mut assets = Mount::new();
@@ -211,7 +217,7 @@ fn start(req: &mut Request) -> IronResult<Response> {
     match File::create("/var/PRECONFIGMODE") {
         Ok(mut file) => {
             info!("create configmode file and reboot...");
-            file.write_all(b"ENABLE CONFIG MODE");
+            let _ = file.write_all(b"ENABLE CONFIG MODE");
             //let _output = Command::new("reboot").arg("now").output();
             Ok(Response::with(status::Ok))
         },
@@ -224,15 +230,19 @@ fn start(req: &mut Request) -> IronResult<Response> {
     
 }
 
-fn connect(req: &mut Request) -> IronResult<Response> {
+#[derive(Serialize)]
+struct ConnectionResponseState {
+    status: String,
+    connected: bool,
+    error:bool,
+}
 
-    
+fn connect(req: &mut Request) -> IronResult<Response> {
     
     let params = get_request_ref!(req, Params, "Getting request params failed");
-
     let network_selection = &*get_param!(params, "network-select", String);
     
-    match network_selection {
+    let r = match network_selection {
         "ethernet" => {
             let ip = get_param!(params, "eth_ipaddress", String);
             let sn = get_param!(params, "eth_subnet", String);
@@ -242,10 +252,10 @@ fn connect(req: &mut Request) -> IronResult<Response> {
             info!("Incoming `connect` to static ip `{}` request", ip);
 
             let command = NetworkCommand::EthConnect {
-                ip: ip,
-                sn: sn,
-                gw: gw,
-                dns: dns,
+                ip,
+                sn,
+                gw,
+                dns,
             };
 
             let request_state = get_request_state!(req);
@@ -276,9 +286,9 @@ fn connect(req: &mut Request) -> IronResult<Response> {
             info!("Incoming `connect` to access point `{}` request", ssid);
 
             let command = NetworkCommand::Connect {
-                ssid: ssid,
-                identity: identity,
-                passphrase: passphrase,
+                ssid,
+                identity,
+                passphrase,
             };
 
             let request_state = get_request_state!(req);
@@ -292,7 +302,58 @@ fn connect(req: &mut Request) -> IronResult<Response> {
             //exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
             Ok(Response::with(status::Ok))
         }
-    }
+    };
 
+    r
+}
+
+fn connect_status(req: &mut Request) -> IronResult<Response> {
+    
+    let request_state = get_request_state!(req);
+
+    let status = match request_state.state_rx.try_recv() {
+        Ok(result) => match result {
+            ConnectionStateResponse::Connected => ConnectionResponseState {
+                status: "connected".to_string(),
+                connected: true,
+                error: false,
+            },
+            ConnectionStateResponse::NoInternet => ConnectionResponseState {
+                status: "no_internet".to_string(),
+                connected: true,
+                error: true,
+            },
+            ConnectionStateResponse::WrongPassword => ConnectionResponseState {
+                status: "wrong_password".to_string(),
+                connected: false,
+                error: true,
+            },
+            ConnectionStateResponse::Unkown(u) => ConnectionResponseState {
+                status: u,
+                connected: false,
+                error: true,
+            },
+            ConnectionStateResponse::UnkownID => ConnectionResponseState {
+                status: "unkown_ssid".to_string(),
+                connected: false,
+                error: true,
+            },
+            _ => {
+                ConnectionResponseState {
+                    status: "unkown".to_string(),
+                    connected: false,
+                    error: false,
+                }
+            }
+        },
+        Err(e) => return exit_with_error(&request_state, anyhow!("Error: GOT CONNECTION STATE {:?}", e)),
+    };
+
+    let status_json = match serde_json::to_string(&status) {
+        Ok(json) => json,
+        Err(e) => return exit_with_error(&request_state, anyhow!("Error: SERIALIE CONNECTION STATE {:?}", e)),
+    };
+
+    return Ok(Response::with((status::Ok, status_json)))
     
 }

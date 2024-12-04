@@ -121,10 +121,32 @@
 					</form>
 				</div>
 			</div>
-			<div class="row hidden" id='submit-message'>
+			<div class="row " id='submit-message'>
 				<div class="col-lg-8 col-lg-offset-2">
 					<h3>Übernehme Einstellungen...</h3>
 					<p>Das Micast-System wird jetzt eine Verbindung zum Server aufbauen. Sollte die Verbindung nicht möglich sein, wird der Accesspoint automatisch wieder Online gehen und du kannst die Einstellungen korrigieren.</p>
+
+					<div class="spinner" style="text-align: center;">
+						<svg style="display:none" id="status_icon" width="50px" height="50px" viewBox="0 0 50 50" >
+							<circle cx="25" cy="25" r="20" fill="none" stroke-width="5" stroke="#007bff" stroke-linecap="round" stroke-dasharray="31.415, 31.415" transform="rotate(0 25 25)">
+								<animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 25 25;360 25 25"></animateTransform>
+							</circle>
+						</svg>
+						<svg style="display:none" id="status_ok_icon" width="50px" height="50px" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="green" class="size-6">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+						</svg>
+						<svg style="display:none" id="status_error_icon" width="50px" height="50px" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="red" class="size-6">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+						</svg>
+					</div>					
+
+
+
+					<div class="spinner" style="text-align: center; flex:1" >
+						<div id="connection_status" style="font-size: 1.5em;" >Bitte warten...</div>
+						<div id="connection_status_sub" style="font-size: 0.9em; color: #555;"></div>
+					</div>
+
 				</div>
 			</div>
 			<div class="row hidden" id='no-networks-message'>
