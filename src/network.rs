@@ -24,6 +24,7 @@ use std::fs;
 pub enum NetworkCommand {
     Activate,
     Timeout,
+    TimoutIn3Seconds,
     Exit,
     EthDhcp,
     Connect {
@@ -221,6 +222,11 @@ impl NetworkCommandHandler {
                     warn!("activate received");
                     self.activate()?;
                 },
+                NetworkCommand::TimoutIn3Seconds => {
+                    thread::sleep(Duration::from_secs(3));
+                    warn!("trigger end, after succesffullconnection");
+                    return Ok(());
+                }
                 NetworkCommand::Timeout => {
                     warn!("receive timeout");
                     //if !self.activated {
