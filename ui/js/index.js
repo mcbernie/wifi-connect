@@ -171,7 +171,11 @@ $(function(){
 						$('#status_error_icon').css('display', 'block');
 
 						$('#connection_status').text('Eine Verbindung konnte nicht hergestellt werden');
-						$('#connection_status_sub').text(connection_response.status);
+						if (connection_response.status === 'state: Deactivated') {
+							$('#connection_status_sub').text("Falsches Passwort oder Netzwerkname");
+						} else {
+							$('#connection_status_sub').text(connection_response.status);
+						}
 					}
 				}
 			}).fail(function() {
