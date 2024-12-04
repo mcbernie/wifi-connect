@@ -1,8 +1,9 @@
 [package]
 name = "wifi-connect"
 version = "4.2.12"
-authors = ["Zahari Petkov <zahari@balena.io>"]
+authors = ["Nicolas Wilms <nwilms@zweiund40.com>"]
 description = "Easy WiFi setup for Linux devices from your mobile phone or laptop"
+edition = "2021"
 
 [dependencies]
 network-manager = { git = "https://github.com/balena-io-modules/network-manager.git", tag="v0.13.3"}
@@ -12,18 +13,16 @@ iron-cors = "0.8"
 staticfile = "0.5"
 mount = "0.4"
 router = "0.6"
-serde = "1.0"
-serde_json = "1.0"
-serde_derive = "1.0"
+serde = "^1.0"
+serde_json = "^1.0"
+serde_derive = "^1.0"
 persistent = "0.4"
 params = "0.8"
-log = "0.4.19"
-env_logger = "0.10"
-nix = "0.26"
-
-[dependencies.error-chain]
-version = "0.12"
-default-features = false
+log = "0.4.22"
+env_logger = "^0.11"
+nix = {version = "0.29", features = ["user", "signal"]}
+itertools = "^0.13"
+anyhow = "1.0"
 
 [profile.release]
 lto = true

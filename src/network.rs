@@ -1,22 +1,23 @@
 use std::thread;
-use std::process;
+use itertools::Itertools;
+use log::{debug, error, info, warn};
+use serde::de;
+use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
 use std::sync::mpsc::{channel, Receiver, Sender};
-use std::error::Error;
 use std::net::Ipv4Addr;
+use anyhow::{anyhow, bail, Result};
 
 use network_manager::{AccessPoint, AccessPointCredentials, Connection, ConnectionState,
                       Connectivity, Device, DeviceState, DeviceType, NetworkManager, Security,
                       ServiceState};
 
-use errors::*;
-use exit::{exit, trap_exit_signals, ExitResult};
-use config::Config;
-
 //use dnsmasq::start_dnsmasq;
 //use hostapd::{start_hostapd, create_phy_if, remove_phy_if};
 
-use server::start_server;
+use crate::config::Config;
+use crate::exit::{exit, trap_exit_signals, ExitResult};
+use crate::server::start_server;
 use std::str::{FromStr,from_utf8};
 use std::fs;
 
@@ -170,8 +171,8 @@ impl NetworkCommandHandler {
 
             if let Err(err) = network_tx.send(NetworkCommand::Timeout) {
                 error!(
-                    "Sending NetworkCommand::Timeout failed: {}",
-                    err.description()
+                    "Sending NetworkCommand::Timeout failed: {:#?}",
+                    err
                 );
             }
         });
@@ -187,7 +188,7 @@ impl NetworkCommandHandler {
             }
 
             if let Err(err) = network_tx.send(NetworkCommand::Exit) {
-                error!("Sending NetworkCommand::Exit failed: {}", err.description());
+                error!("Sending NetworkCommand::Exit failed: {:#?}", err);
             }
         });
     }
@@ -256,7 +257,7 @@ impl NetworkCommandHandler {
             Err(e) => {
                 // Sleep for a second, so that other threads may log error info.
                 thread::sleep(Duration::from_secs(1));
-                Err(e).chain_err(|| ErrorKind::RecvNetworkCommand)
+                Err(e.into())
             },
         }
     }
@@ -411,8 +412,10 @@ impl NetworkCommandHandler {
 
         // determine if ethernet is aviable
         self.server_tx
-            .send(NetworkCommandResponse::Network(nc))
-            .chain_err(|| ErrorKind::SendAccessPointSSIDs)
+            .send(NetworkCommandResponse::Network(nc))?;
+
+        Ok(())
+            //.chain_err(|| ErrorKind::SendAccessPointSSIDs)
     }
 
     fn connect_dhcp(&mut self) -> Result<bool> {
@@ -632,6 +635,7 @@ fn init_access_point_credentials(
     passphrase: &str,
 ) -> AccessPointCredentials {
     if access_point.security.contains(Security::ENTERPRISE) {
+        warn!("Enterprise security detected identity: {}, passphrase: {}", identity, passphrase);
         AccessPointCredentials::Enterprise {
             identity: identity.to_string(),
             passphrase: passphrase.to_string(),
@@ -639,6 +643,7 @@ fn init_access_point_credentials(
     } else if access_point.security.contains(Security::WPA2)
         || access_point.security.contains(Security::WPA)
     {
+        warn!("WPA / WPA2 security detected passphrase: {}", passphrase);
         AccessPointCredentials::Wpa {
             passphrase: passphrase.to_string(),
         }
@@ -666,7 +671,8 @@ pub fn process_network_commands(config: &Config, exit_tx: &Sender<ExitResult>) {
 pub fn init_networking(config: &Config) -> Result<()> {
     start_network_manager_service()?;
 
-    delete_exising_wifi_connect_ap_profile(&config.ssid).chain_err(|| ErrorKind::DeleteAccessPoint)
+    delete_exising_wifi_connect_ap_profile(&config.ssid)?;//.chain_err(|| ErrorKind::DeleteAccessPoint)
+    Ok(())
 }
 
 fn get_eth_uuid(interface: &String) -> Result<String> {
@@ -765,28 +771,27 @@ fn get_eth_dns(con_uuid: &String) -> Result<String> {
 pub fn find_eth_device(manager: &NetworkManager, interface: &Option<String>) -> Result<Device> {
     if let Some(ref interface) = *interface {
         let device = manager
-            .get_device_by_interface(interface)
-            .chain_err(|| ErrorKind::DeviceByInterface(interface.clone()))?;
+            .get_device_by_interface(interface).map_err(|e| anyhow!("Error: {:?} - DeviceByInterface {:?}", e, interface.clone()))?;
 
         info!("Targeted Ethernet device: {}", interface);
 
         if *device.device_type() != DeviceType::Ethernet {
-            bail!(ErrorKind::NotAWiFiDevice(interface.clone()))
+            bail!(" NotAWiFiDevice({:?})", interface.clone())
         }
 
-        if device.get_state()? == DeviceState::Unavailable {
-            bail!(ErrorKind::UnmanagedDevice(interface.clone()))
+        if device.get_state().map_err(|e| anyhow!("kann state nicht abrufen {:?}", e))? == DeviceState::Unavailable {
+            bail!(" Unaviable({:?})", interface.clone())
         }
 
         Ok(device)
     } else {
-        let devices = manager.get_devices()?;
+        let devices = manager.get_devices().map_err(|e| anyhow!("kann devices nicht abrufen {:?}", e))?;
 
         if let Some(device) = find_ethernet_device(devices)? {
             info!("Ethernet device: {}", device.interface());
             Ok(device)
         } else {
-            bail!(ErrorKind::NoEthDevice)
+            bail!("no Ethernet device found!")
         }
     }
 } 
@@ -794,28 +799,27 @@ pub fn find_eth_device(manager: &NetworkManager, interface: &Option<String>) -> 
 pub fn find_device(manager: &NetworkManager, interface: &Option<String>) -> Result<Device> {
     if let Some(ref interface) = *interface {
         let device = manager
-            .get_device_by_interface(interface)
-            .chain_err(|| ErrorKind::DeviceByInterface(interface.clone()))?;
+            .get_device_by_interface(interface).map_err(|e| anyhow!("Error: {:?} - DeviceByInterface {:?}", e, interface.clone()))?;
 
         info!("Targeted WiFi device: {}", interface);
 
         if *device.device_type() != DeviceType::WiFi {
-            bail!(ErrorKind::NotAWiFiDevice(interface.clone()))
+            bail!(" NotAWiFiDevice({:?})", interface.clone())
         }
 
-        if device.get_state()? == DeviceState::Unmanaged {
-            bail!(ErrorKind::UnmanagedDevice(interface.clone()))
+        if device.get_state().map_err(|e| anyhow!("kann state nicht abrufen {:?}", e))? == DeviceState::Unmanaged {
+            bail!(" UnmanagedDevice({:?})", interface.clone())
         }
 
         Ok(device)
     } else {
-        let devices = manager.get_devices()?;
+        let devices = manager.get_devices().map_err(|e| anyhow!("kann devices nicht abrufen {:?}", e))?;
 
         if let Some(device) = find_wifi_managed_device(devices)? {
             info!("WiFi device: {}", device.interface());
             Ok(device)
         } else {
-            bail!(ErrorKind::NoWiFiDevice)
+            bail!("no Wifi device found!")
         }
     }
 }
@@ -823,7 +827,7 @@ pub fn find_device(manager: &NetworkManager, interface: &Option<String>) -> Resu
 fn find_wifi_managed_device(devices: Vec<Device>) -> Result<Option<Device>> {
     for device in devices {
         if *device.device_type() == DeviceType::WiFi
-            && device.get_state()? != DeviceState::Unmanaged
+            && device.get_state().map_err(|e| anyhow!("kann device state nicht abrufen {:?}", e))? != DeviceState::Unmanaged
         {
             return Ok(Some(device));
         }
@@ -835,7 +839,7 @@ fn find_wifi_managed_device(devices: Vec<Device>) -> Result<Option<Device>> {
 fn find_ethernet_device(devices: Vec<Device>) -> Result<Option<Device>> {
     for device in devices {
         if *device.device_type() == DeviceType::Ethernet
-            && device.get_state()? != DeviceState::Unavailable
+            && device.get_state().map_err(|e| anyhow!("kann device state nicht abrufen {:?}", e))? != DeviceState::Unavailable
         {
             return Ok(Some(device));
         }
@@ -845,7 +849,7 @@ fn find_ethernet_device(devices: Vec<Device>) -> Result<Option<Device>> {
 }
 
 fn get_access_points(device: &Device) -> Result<Vec<AccessPoint>> {
-    get_access_points_impl(device).chain_err(|| ErrorKind::NoAccessPoints)
+    get_access_points_impl(device).map_err(|e| anyhow!("NoAccessPoints ({:?})",e))
 }
 
 fn get_access_points_impl(device: &Device) -> Result<Vec<AccessPoint>> {
@@ -856,16 +860,17 @@ fn get_access_points_impl(device: &Device) -> Result<Vec<AccessPoint>> {
     // of access points to become available
     while retries < retries_allowed {
         let wifi_device = device.as_wifi_device().unwrap();
-        let mut access_points = wifi_device.get_access_points()?;
+        let mut access_points = wifi_device.get_access_points().map_err(|e| anyhow!("no accesspoints {:?}", e))?;
 
         access_points.retain(|ap| ap.ssid().as_str().is_ok());
 
         if !access_points.is_empty() {
+            let remove_duplicates: Vec<_> = access_points.into_iter().unique_by(|ap| ap.ssid.to_owned()).collect();
             info!(
                 "Access points: {:?}",
-                get_access_points_ssids(&access_points)
+                get_access_points_ssids(&remove_duplicates)
             );
-            return Ok(access_points);
+            return Ok(remove_duplicates);
         }
 
         retries += 1;
@@ -928,7 +933,7 @@ fn wait_for_connectivity(manager: &NetworkManager, timeout: u64) -> Result<bool>
     let mut total_time = 0;
 
     loop {
-        let connectivity = manager.get_connectivity()?;
+        let connectivity = manager.get_connectivity().map_err(|e| anyhow!("no connectivity {:?}", e))?;
 
         if connectivity == Connectivity::Full || connectivity == Connectivity::Limited {
             debug!(
@@ -967,9 +972,9 @@ pub fn start_network_manager_service() -> Result<()> {
     };
 
     if state != ServiceState::Active {
-        let state = NetworkManager::start_service(15).chain_err(|| ErrorKind::StartNetworkManager)?;
+        let state = NetworkManager::start_service(15).map_err(|e| anyhow!("error starting NetworkManager ({:?})", e))?;
         if state != ServiceState::Active {
-            bail!(ErrorKind::StartActiveNetworkManager);
+            bail!("NetworkManager State is not Active!");
         } else {
             info!("NetworkManager service started successfully");
         }
@@ -983,13 +988,13 @@ pub fn start_network_manager_service() -> Result<()> {
 fn delete_exising_wifi_connect_ap_profile(ssid: &str) -> Result<()> {
     let manager = NetworkManager::new();
 
-    for connection in &manager.get_connections()? {
+    for connection in &manager.get_connections().map_err(|e| anyhow!("error get connections: ({:?})", e))? {
         if is_access_point_connection(connection) && is_same_ssid(connection, ssid) {
             info!(
                 "Deleting already created by WiFi Connect access point connection profile: {:?}",
                 connection.settings().ssid,
             );
-            connection.delete()?;
+            connection.delete().map_err(|e| anyhow!("connection delete error: {:?}",e))?;
         }
     }
 

@@ -1,4 +1,4 @@
-use clap::{Command, Arg};
+use clap::{Command, Arg, crate_name, crate_version, crate_authors, crate_description};
 
 use std::env;
 use std::net::Ipv4Addr;

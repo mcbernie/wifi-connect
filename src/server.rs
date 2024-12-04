@@ -1,10 +1,11 @@
+use anyhow::{anyhow, Error};
+use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, Sender};
 use std::fmt;
 use std::net::Ipv4Addr;
 use std::error::Error as StdError;
 
 use serde_json;
-use path::PathBuf;
 use iron::prelude::*;
 use iron::{headers, status, typemap, AfterMiddleware, Iron, IronError, IronResult, Request,
            Response, Url};
@@ -16,9 +17,9 @@ use mount::Mount;
 use persistent::Write;
 use params::{FromValue, Params};
 
-use errors::*;
-use network::{NetworkCommand, NetworkCommandResponse};
-use exit::{exit, ExitResult};
+use log::{debug, error, info};
+use crate::network::{NetworkCommand, NetworkCommandResponse};
+use crate::exit::{exit, ExitResult};
 
 struct RequestSharedState {
     gateway: Ipv4Addr,
@@ -90,15 +91,11 @@ macro_rules! get_request_state {
     )
 }
 
-fn exit_with_error<E>(state: &RequestSharedState, e: E, e_kind: ErrorKind) -> IronResult<Response>
-where
-    E: ::std::error::Error + Send + 'static,
+fn exit_with_error(state: &RequestSharedState, e: Error) -> IronResult<Response>
 {
-    let description = e_kind.description().into();
-    let err = Err::<Response, E>(e).chain_err(|| e_kind);
-    exit(&state.exit_tx, err.unwrap_err());
+    exit(&state.exit_tx, e);
     Err(IronError::new(
-        StringError(description),
+        StringError("ein fehler".to_string()),
         status::InternalServerError,
     ))
 }
@@ -169,7 +166,7 @@ pub fn start_server(
     if let Err(e) = Iron::new(chain).http(&address) {
         exit(
             &exit_tx_clone,
-            ErrorKind::StartHTTPServer(address, e.description().into()).into(),
+            anyhow!("Error start HTTP SERVER! {:?}",e),
         );
     }
 }
@@ -182,19 +179,19 @@ fn networks(req: &mut Request) -> IronResult<Response> {
     
 
     if let Err(e) = request_state.network_tx.send(NetworkCommand::Activate) {
-        return exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandActivate);
+        return exit_with_error(&request_state, anyhow!("Error SendNetworkCommandActivate {:?}", e));
     }
 
     let network = match request_state.server_rx.recv() {
         Ok(result) => match result {
             NetworkCommandResponse::Network(network) => network,
         },
-        Err(e) => return exit_with_error(&request_state, e, ErrorKind::RecvAccessPointSSIDs),
+        Err(e) => return exit_with_error(&request_state, anyhow!("Error: RecvAccessPointSSIDs {:?}", e)),
     };
 
     let network_json = match serde_json::to_string(&network) {
         Ok(json) => json,
-        Err(e) => return exit_with_error(&request_state, e, ErrorKind::SerializeAccessPointSSIDs),
+        Err(e) => return exit_with_error(&request_state, anyhow!("Error: SerializeAccessPointSSIDs {:?}", e)),
     };
 
     Ok(Response::with((status::Ok, network_json)))
@@ -253,7 +250,7 @@ fn connect(req: &mut Request) -> IronResult<Response> {
 
             let request_state = get_request_state!(req);
             if let Err(e) = request_state.network_tx.send(command) {
-                exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
+                exit_with_error(&request_state, anyhow!("error SendNetworkCommandConnect {:?}", e))
             } else {
                 Ok(Response::with(status::Ok))
             }
@@ -265,7 +262,7 @@ fn connect(req: &mut Request) -> IronResult<Response> {
 
             let request_state = get_request_state!(req);
             if let Err(e) = request_state.network_tx.send(command) {
-                exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
+                exit_with_error(&request_state, anyhow!("error SendNetworkCommandConnect {:?}", e))
             } else {
                 Ok(Response::with(status::Ok))
             }
@@ -286,7 +283,7 @@ fn connect(req: &mut Request) -> IronResult<Response> {
 
             let request_state = get_request_state!(req);
             if let Err(e) = request_state.network_tx.send(command) {
-                exit_with_error(&request_state, e, ErrorKind::SendNetworkCommandConnect)
+                exit_with_error(&request_state, anyhow!("error SendNetworkCommandConnect {:?}", e))
             } else {
                 Ok(Response::with(status::Ok))
             }

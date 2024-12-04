@@ -1,8 +1,7 @@
 use std::sync::mpsc::Sender;
-
-use nix::sys::signal::{SigSet, SIGHUP, SIGINT, SIGQUIT, SIGTERM};
-
-use errors::*;
+use anyhow::{Error, Result};
+use log::info;
+use nix::sys::signal::{SigSet, Signal::{SIGHUP, SIGINT, SIGQUIT, SIGTERM}};
 
 pub type ExitResult = Result<()>;
 
@@ -13,15 +12,16 @@ pub fn exit(exit_tx: &Sender<ExitResult>, error: Error) {
 /// Block exit signals from the main thread with mask inherited by children
 pub fn block_exit_signals() -> Result<()> {
     let mask = create_exit_sigmask();
-    mask.thread_block()
-        .chain_err(|| ErrorKind::BlockExitSignals)
+    mask.thread_block()?;
+
+    Ok(())
 }
 
 /// Trap exit signals from a signal handling thread
 pub fn trap_exit_signals() -> Result<()> {
     let mask = create_exit_sigmask();
 
-    let sig = mask.wait().chain_err(|| ErrorKind::TrapExitSignals)?;
+    let sig = mask.wait()?;
 
     info!("\nReceived {:?}", sig);
 
