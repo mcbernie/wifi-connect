@@ -149,7 +149,7 @@ pub fn start_server(
     router.get("/", Static::new(ui_directory), "index");
     router.get("/networks", networks, "networks");
     router.post("/connect", connect, "connect");
-    router.post("/connect_state", connect_status, "connect_state");
+    router.get("/connect_state", connect_status, "connect_state");
     router.post("/start", start, "start");
 
     let mut assets = Mount::new();
