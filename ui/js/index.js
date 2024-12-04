@@ -138,7 +138,16 @@ $(function(){
 		$('#status_ok_icon').css('display', 'none');
 		$('#status_error_icon').css('display', 'none');
 
-		$.post('/connect', $('#connect-form').serialize(), function(data){});
+		$.post('/connect', $('#connect-form').serialize(), function(data){}).fail(function() {
+			$('#retry-button').css("display", "block");
+			$('#status_icon').css('display', 'none');
+			$('#status_ok_icon').css('display', 'none');
+			$('#status_error_icon').css('display', 'block');
+
+			$('#connection_status').text('Fehler mit der Verbindung');
+			$('#connection_status_sub').text('Bitte verbinde dich erneut mit dem Hotspot oder starte das micast-system erneut!');
+			
+		});
 
 		global_timer = setInterval(function() {
 			$.get('/connect_state', function(response) {
@@ -165,6 +174,15 @@ $(function(){
 						$('#connection_status_sub').text(connection_response.status);
 					}
 				}
+			}).fail(function() {
+				$('#retry-button').css("display", "block");
+				$('#status_icon').css('display', 'none');
+				$('#status_ok_icon').css('display', 'none');
+				$('#status_error_icon').css('display', 'block');
+
+				$('#connection_status').text('Fehler mit der Verbindung');
+				$('#connection_status_sub').text('Bitte verbinde dich erneut mit dem Hotspot oder starte das micast-system erneut!');
+				
 			});
 		}, 200);
 	
