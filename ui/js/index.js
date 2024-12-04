@@ -145,7 +145,7 @@ $(function(){
 			$('#status_error_icon').css('display', 'block');
 
 			$('#connection_status').text('Fehler mit der Verbindung');
-			$('#connection_status_sub').text('Bitte verbinde dich erneut mit dem Hotspot oder starte das micast-system erneut!');
+			$('#connection_status_sub').text('Bitte verbinde dich erneut mit dem Hotspot oder starte das micast-System erneut!');
 			
 		});
 
@@ -161,7 +161,7 @@ $(function(){
 					$('#status_error_icon').css('display', 'none');
 
 					$('#connection_status').text('Erfolgreich verbunden');
-					$('#connection_status_sub').text('Sie können das System jetzt verwenden');
+					$('#connection_status_sub').text('Die Netzwerkverbindung wurde erfolgreich eingerichtet.');
 				} else {
 					if (connection_response.error === true) {
 						clearInterval(global_timer);
@@ -185,7 +185,7 @@ $(function(){
 				$('#status_error_icon').css('display', 'block');
 
 				$('#connection_status').text('Fehler mit der Verbindung');
-				$('#connection_status_sub').text('Bitte verbinde dich erneut mit dem Hotspot oder starte das micast-system erneut!');
+				$('#connection_status_sub').text('Bitte verbinde dich erneut mit dem Hotspot oder starte das micast-System erneut!');
 				
 			});
 		}, 200);

@@ -298,10 +298,10 @@ impl NetworkCommandHandler {
                 match File::create("/var/CONFIGMODE") {
                     Ok(mut file) => {
                         info!("create configmode file and reboot...");
-                        file.write_all(b"ENABLE CONFIG MODE");
+                        let _ = file.write_all(b"ENABLE CONFIG MODE");
                         let _output = Command::new("reboot").arg("now").output();
                     },
-                    Err(e) => {
+                    Err(_e) => {
                         debug!("Error on set Config Mode");
                     }
                 }
@@ -491,11 +491,15 @@ impl NetworkCommandHandler {
                     Ok(has_connectivity) => {
                         if has_connectivity {
                             info!("Internet connectivity established");
+                            self.state_tx.send(ConnectionStateResponse::Connected)?;
                         } else {
                             warn!("Cannot establish Internet connectivity");
+                            self.state_tx.send(ConnectionStateResponse::NoInternet)?;
                         }
                     },
-                    Err(err) => error!("Getting Internet connectivity failed: {}", err),
+                    Err(err) => {
+                        error!("Getting Internet connectivity failed: {}", err)
+                    },
                 }
 
                 return Ok(true);
@@ -506,6 +510,7 @@ impl NetworkCommandHandler {
         }
         
         
+        self.state_tx.send(ConnectionStateResponse::Unkown("Da hat was leider nicht funktioniert...".to_string()))?;
         Ok(false)
     }
 
@@ -576,11 +581,16 @@ impl NetworkCommandHandler {
                     Ok(has_connectivity) => {
                         if has_connectivity {
                             info!("Internet connectivity established");
+                            self.state_tx.send(ConnectionStateResponse::Connected)?;
                         } else {
                             warn!("Cannot establish Internet connectivity");
+                            self.state_tx.send(ConnectionStateResponse::NoInternet)?;
                         }
                     },
-                    Err(err) => error!("Getting Internet connectivity failed: {}", err),
+                    Err(err) => {
+                        error!("Getting Internet connectivity failed: {}", err);
+                        self.state_tx.send(ConnectionStateResponse::Unkown(format!("status: {:?}", err)))?;
+                    },
                 }
 
                 return Ok(true);
@@ -591,6 +601,7 @@ impl NetworkCommandHandler {
         }
         
         
+        self.state_tx.send(ConnectionStateResponse::Unkown("Da hat was leider nicht funktioniert...".to_string()))?;
         Ok(false)
     }
 
@@ -892,6 +903,11 @@ fn get_access_points_impl(device: &Device) -> Result<Vec<AccessPoint>> {
 
         if !access_points.is_empty() {
             let remove_duplicates: Vec<_> = access_points.into_iter().unique_by(|ap| ap.ssid.to_owned()).collect();
+            let remove_duplicates: Vec<_> = remove_duplicates
+                .into_iter()
+                .sorted_by( |a, b| 
+                    Ord::cmp(a.ssid.as_str().unwrap_or_default(),b.ssid.as_str().unwrap_or_default())
+                ).collect();
             info!(
                 "Access points: {:?}",
                 get_access_points_ssids(&remove_duplicates)
@@ -901,7 +917,7 @@ fn get_access_points_impl(device: &Device) -> Result<Vec<AccessPoint>> {
 
         retries += 1;
         debug!("No access points found - retry #{}", retries);
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_millis(200));
     }
 
     warn!("No access points found - giving up...");
@@ -977,12 +993,12 @@ fn wait_for_connectivity(manager: &NetworkManager, timeout: u64) -> Result<bool>
             return Ok(false);
         }
 
-        ::std::thread::sleep(::std::time::Duration::from_secs(1));
+        ::std::thread::sleep(::std::time::Duration::from_millis(200));
 
         total_time += 1;
 
         debug!(
-            "Still waiting for connectivity: {:?} / {}s elapsed",
+            "Still waiting for connectivity: {:?} / {} x 200ms elapsed",
             connectivity, total_time
         );
     }
