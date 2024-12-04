@@ -346,7 +346,13 @@ fn connect_status(req: &mut Request) -> IronResult<Response> {
                 }
             }
         },
-        Err(e) => return exit_with_error(&request_state, anyhow!("Error: GOT CONNECTION STATE {:?}", e)),
+        Err(_e) => {
+            ConnectionResponseState {
+                status: "...".to_string(),
+                connected: false,
+                error: false,
+            }
+        },
     };
 
     let status_json = match serde_json::to_string(&status) {
