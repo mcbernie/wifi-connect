@@ -34,12 +34,15 @@ $(function(){
 
 	async function fetchNetworks() {
 
+		console.log("fetchNetworks");
 		try {
 			// jQuery $.get in ein Promise umwandeln
+			console.log("awaiting networks");
 			const data = await new Promise((resolve, reject) => {
 				$.get("/networks", resolve).fail(reject);
 			});
 	
+			console.log("got networks");
 			const config = JSON.parse(data);
 	
 			if (config.ssids.length > 0) {
@@ -149,7 +152,7 @@ $(function(){
 					$('#status_error_icon').css('display', 'none');
 
 					$('#connection_status').text('Erfolgreich verbunden');
-					$('#connection_status_sub').text(connection_response.status);
+					$('#connection_status_sub').text('Sie können das System jetzt verwenden');
 				} else {
 					if (connection_response.error === true) {
 						clearInterval(global_timer);
