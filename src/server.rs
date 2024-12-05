@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Error};
-use serde::Serialize;
 use serde_derive::Serialize;
 use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, Sender};
