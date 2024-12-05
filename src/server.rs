@@ -18,7 +18,7 @@ use mount::Mount;
 use persistent::Write;
 use params::{FromValue, Params};
 
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use crate::network::{ConnectionStateResponse, NetworkCommand, NetworkCommandResponse};
 use crate::exit::{exit, ExitResult};
 
@@ -115,6 +115,7 @@ impl AfterMiddleware for RedirectMiddleware {
         
 
         if let Some(host) = req.headers.get::<headers::Host>() {
+            warn!("Redirecting to gateway: {} when !hostname {}", gateway, host.hostname);
             if host.hostname != gateway {
                 let url = Url::parse(&format!("http://{}/", gateway)).unwrap();
                 return Ok(Response::with((status::Found, Redirect(url))));
