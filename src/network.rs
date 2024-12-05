@@ -24,7 +24,6 @@ use std::fs;
 pub enum NetworkCommand {
     Activate,
     Timeout,
-    TimoutIn3Seconds,
     Exit,
     EthDhcp,
     Connect {
@@ -214,6 +213,7 @@ impl NetworkCommandHandler {
     }
 
     fn run_loop(&mut self) -> ExitResult {
+        let mut stop_loop_in_3_seconds = false;
         loop {
             let command = self.receive_network_command()?;
 
@@ -222,11 +222,6 @@ impl NetworkCommandHandler {
                     warn!("activate received");
                     self.activate()?;
                 },
-                NetworkCommand::TimoutIn3Seconds => {
-                    thread::sleep(Duration::from_secs(3));
-                    warn!("trigger end, after succesffullconnection");
-                    return Ok(());
-                }
                 NetworkCommand::Timeout => {
                     warn!("receive timeout");
                     //if !self.activated {
@@ -242,6 +237,7 @@ impl NetworkCommandHandler {
                 NetworkCommand::EthDhcp => {
                     if self.connect_dhcp()? {
                         warn!("ethdhcp received");
+                        stop_loop_in_3_seconds = true;
                         //return Ok(());
                     }
                 },
@@ -254,6 +250,7 @@ impl NetworkCommandHandler {
                     warn!("ethconnect received");
                     if self.connect_static(&ip, &sn, &gw, &dns)? {
                         warn!("connected");
+                        stop_loop_in_3_seconds = true;
                         //return Ok(());
                     }
                 },
@@ -265,10 +262,17 @@ impl NetworkCommandHandler {
                     warn!("connect");
                     if self.connect(&ssid, &identity, &passphrase)? {
                         warn!("connected to wlan...");
+                        stop_loop_in_3_seconds = true;
                         //return Ok(());
                     }
                 },
             }
+            if stop_loop_in_3_seconds {
+                thread::sleep(Duration::from_secs(3));
+                warn!("trigger end, after succesffullconnection");
+                return Ok(());
+            }
+            std::thread::sleep(Duration::from_millis(200));
         }
     }
 

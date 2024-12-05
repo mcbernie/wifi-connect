@@ -19,7 +19,7 @@ use persistent::Write;
 use params::{FromValue, Params};
 
 use log::{debug, error, info, warn};
-use crate::network::{ConnectionStateResponse, NetworkCommand, NetworkCommandResponse};
+use crate::network::{ConnectionStateResponse, NetworkCommand, NetworkCommandResponse, NetworkConfiguration};
 use crate::exit::{exit, ExitResult};
 
 struct RequestSharedState {
